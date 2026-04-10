@@ -1,0 +1,71 @@
+.welcome-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 182, 193, 0.35), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(135, 206, 250, 0.35), transparent 30%),
+    linear-gradient(135deg, #1e1e2f, #2d325a, #3f4d8a);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
+
+.overlay {
+  width: 100%;
+  min-height: 100vh;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.content {
+  text-align: center;
+  color: white;
+  padding: 40px 20px;
+}
+
+.content h1 {
+  font-size: 4rem;
+  margin-bottom: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.content p {
+  font-size: 1.3rem;
+  margin-bottom: 40px;
+  color: #f3f3f3;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.cool-button {
+  padding: 14px 34px;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 26px 10px 26px 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cool-button:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.signup-btn {
+  background: linear-gradient(135deg, #ff6b9c, #ff8e53);
+}
+
+.signin-btn {
+  background: linear-gradient(135deg, #4facfe, #00c6ff);
+}
