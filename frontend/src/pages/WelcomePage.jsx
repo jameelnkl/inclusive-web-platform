@@ -1,30 +1,50 @@
 import { useNavigate } from "react-router-dom";
-import "./WelcomePage.css";
+import logoImage from "../assets/john-logo.png";
+import "../styles/authPages.css";
 
 function WelcomePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="welcome-page">
-      <div className="overlay">
-        <div className="content">
-          <h1>Welcome!</h1>
-          <p>Your journey starts here</p>
+    <div className="auth-page">
+      <div className="auth-shell auth-shell--welcome">
+        <div className="auth-left">
+          <span className="auth-badge">Join Hospitality</span>
 
-          <div className="button-group">
+          <h1 className="auth-heading">
+            Inclusive hospitality starts with the right opportunity.
+          </h1>
+
+          <p className="auth-text">
+            A professional and accessible platform designed to connect people
+            and possibilities in hospitality.
+          </p>
+
+          <div className="welcome-actions">
             <button
-              className="cool-button signup-btn"
+              className="primary-btn"
               onClick={() => navigate("/signup")}
             >
-              Sign Up
+              Create Account
             </button>
 
             <button
-              className="cool-button signin-btn"
+              className="secondary-btn"
               onClick={() => navigate("/signin")}
             >
               Sign In
             </button>
+          </div>
+        </div>
+
+        <div className="auth-right">
+          <div className="logo-panel">
+            <div className="logo-glow"></div>
+            <img
+              src={logoImage}
+              alt="John Hospitality logo"
+              className="logo-image"
+            />
           </div>
         </div>
       </div>

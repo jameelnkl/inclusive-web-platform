@@ -1,6 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { loginUser, saveToken, getRoleFromToken } from "../services/authService";
+import { Link, useNavigate } from "react-router-dom";
+import logoImage from "../assets/john-logo.png";
+import {
+  loginUser,
+  saveToken,
+  getRoleFromToken,
+} from "../services/authService";
+import "../styles/authPages.css";
 
 function SignInPage() {
   const navigate = useNavigate();
@@ -10,6 +16,7 @@ function SignInPage() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -58,94 +65,79 @@ function SignInPage() {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Sign In</h1>
-        <p style={styles.subtitle}>Welcome back</p>
+    <div className="auth-page">
+      <div className="auth-shell">
+        <div className="auth-left">
+          <span className="auth-badge">Welcome Back</span>
+          <h1 className="auth-title">Sign In</h1>
+          <p className="auth-subtitle">
+            Access your account and continue your journey with John Hospitality.
+          </p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email address"
-            value={formData.email}
-            onChange={handleChange}
-            style={styles.input}
-          />
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                className="auth-input"
+              />
+            </div>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            style={styles.input}
-          />
+            <div className="auth-field">
+              <label htmlFor="password">Password</label>
 
-          {error && <p style={styles.error}>{error}</p>}
+              <div className="password-input-wrapper">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="auth-input password-input"
+                />
 
-          <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="auth-error">{error}</p>}
+
+            <button type="submit" className="primary-btn full-width" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <p className="auth-footer">
+            Don&apos;t have an account? <Link to="/signup">Create one</Link>
+          </p>
+        </div>
+
+        <div className="auth-right">
+          <div className="logo-panel">
+            <div className="logo-glow"></div>
+            <img
+              src={logoImage}
+              alt="John Hospitality logo"
+              className="logo-image"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #dff4ff, #eef7ff)",
-    padding: "20px",
-  },
-  card: {
-    backgroundColor: "white",
-    padding: "40px",
-    borderRadius: "24px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-    width: "100%",
-    maxWidth: "420px",
-  },
-  title: {
-    margin: 0,
-    marginBottom: "10px",
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    color: "#666",
-    marginBottom: "25px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
-  input: {
-    padding: "14px",
-    borderRadius: "14px",
-    border: "1px solid #ddd",
-    fontSize: "16px",
-  },
-  button: {
-    padding: "14px",
-    border: "none",
-    borderRadius: "18px 8px 18px 8px",
-    background: "linear-gradient(135deg, #4facfe, #00c6ff)",
-    color: "white",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  error: {
-    color: "#d11a2a",
-    margin: 0,
-    fontSize: "14px",
-  },
-};
 
 export default SignInPage;

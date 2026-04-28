@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import logoImage from "../assets/john-logo.png";
 import { registerUser } from "../services/authService";
+import "../styles/authPages.css";
 
 function SignUpPage() {
   const navigate = useNavigate();
@@ -11,6 +13,7 @@ function SignUpPage() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -21,6 +24,13 @@ function SignUpPage() {
       [e.target.name]: e.target.value,
     });
   }
+
+  const passwordChecks = {
+    length: formData.password.length >= 8,
+    lowercase: /[a-z]/.test(formData.password),
+    uppercase: /[A-Z]/.test(formData.password),
+    symbol: /[\W_]/.test(formData.password),
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -52,109 +62,112 @@ function SignUpPage() {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Sign Up</h1>
-        <p style={styles.subtitle}>Create your account to begin your journey</p>
+    <div className="auth-page">
+      <div className="auth-shell">
+        <div className="auth-left">
+          <span className="auth-badge">Join Hospitality</span>
+          <h1 className="auth-title">Sign Up</h1>
+          <p className="auth-subtitle">
+            Create your account and begin your journey in a more inclusive
+            hospitality experience.
+          </p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            value={formData.username}
-            onChange={handleChange}
-            style={styles.input}
-          />
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                name="username"
+                placeholder="Choose a username"
+                value={formData.username}
+                onChange={handleChange}
+                className="auth-input"
+              />
+            </div>
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email address"
-            value={formData.email}
-            onChange={handleChange}
-            style={styles.input}
-          />
+            <div className="auth-field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                className="auth-input"
+              />
+            </div>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            style={styles.input}
-          />
+            <div className="auth-field">
+              <label htmlFor="password">Password</label>
 
-          {error && <p style={styles.error}>{error}</p>}
-          {success && <p style={styles.success}>{success}</p>}
+              <div className="password-input-wrapper">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="auth-input password-input"
+                />
 
-          <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? "Creating account..." : "Sign Up"}
-          </button>
-        </form>
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+
+              <div className="password-hints">
+                <p className="password-hints-title">Password must contain:</p>
+                <ul className="password-rules">
+                  <li className={passwordChecks.length ? "rule valid" : "rule"}>
+                    At least 8 characters
+                  </li>
+                  <li className={passwordChecks.lowercase ? "rule valid" : "rule"}>
+                    At least one lowercase letter
+                  </li>
+                  <li className={passwordChecks.uppercase ? "rule valid" : "rule"}>
+                    At least one uppercase letter
+                  </li>
+                  <li className={passwordChecks.symbol ? "rule valid" : "rule"}>
+                    At least one symbol
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {error && <p className="auth-error">{error}</p>}
+            {success && <p className="auth-success">{success}</p>}
+
+            <button type="submit" className="primary-btn full-width" disabled={loading}>
+              {loading ? "Creating account..." : "Sign Up"}
+            </button>
+          </form>
+
+          <p className="auth-footer">
+            Already have an account? <Link to="/signin">Sign in</Link>
+          </p>
+        </div>
+
+        <div className="auth-right">
+          <div className="logo-panel">
+            <div className="logo-glow"></div>
+            <img
+              src={logoImage}
+              alt="John Hospitality logo"
+              className="logo-image"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #f8d7ff, #ffe7d1)",
-    padding: "20px",
-  },
-  card: {
-    backgroundColor: "white",
-    padding: "40px",
-    borderRadius: "24px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-    width: "100%",
-    maxWidth: "420px",
-  },
-  title: {
-    margin: 0,
-    marginBottom: "10px",
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    color: "#666",
-    marginBottom: "25px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
-  input: {
-    padding: "14px",
-    borderRadius: "14px",
-    border: "1px solid #ddd",
-    fontSize: "16px",
-  },
-  button: {
-    padding: "14px",
-    border: "none",
-    borderRadius: "18px 8px 18px 8px",
-    background: "linear-gradient(135deg, #ff6b9c, #ff8e53)",
-    color: "white",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  error: {
-    color: "#d11a2a",
-    margin: 0,
-    fontSize: "14px",
-  },
-  success: {
-    color: "#0f9d58",
-    margin: 0,
-    fontSize: "14px",
-  },
-};
 
 export default SignUpPage;

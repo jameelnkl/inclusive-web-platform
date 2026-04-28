@@ -34,6 +34,8 @@ final class AuthController extends AbstractController
             ], 400);
         }
 
+        $sendVerificationEmail = $data['sendVerificationEmail'] ?? true;
+
         $username = trim($data['username']);
         $emailAddress = trim($data['email']);
         $password = $data['password'];
@@ -96,21 +98,23 @@ final class AuthController extends AbstractController
         $entityManager->persist($user);
         $entityManager->flush();
 
-        $baseUrl = $_ENV['VERIFICATION_BASE_URL'] ?? 'http://127.0.0.1:8081/index.php';
-        $verificationLink = $baseUrl . '/api/verify-email?token=' . $verificationToken;
+        if ($sendVerificationEmail) {
+            $baseUrl = $_ENV['VERIFICATION_BASE_URL'] ?? 'http://localhost:8081';
+            $verificationLink = $baseUrl . '/api/verify-email?token=' . $verificationToken;
 
-        $email = (new Email())
-            ->from('inclusive.web.platform@outlook.com')
-            ->to($user->getEmail())
-            ->subject('Verify your email')
-            ->text(
-                "Welcome {$user->getUsername()}!\n\n" .
-                "Please verify your email by clicking this link:\n" .
-                $verificationLink . "\n\n" .
-                "If you did not create this account, you can ignore this email."
-            );
+            $email = (new Email())
+                ->from('inclusive.web.platform@outlook.com')
+                ->to($user->getEmail())
+                ->subject('Verify your email')
+                ->text(
+                    "Welcome {$user->getUsername()}!\n\n" .
+                    "Please verify your email by clicking this link:\n" .
+                    $verificationLink . "\n\n" .
+                    "If you did not create this account, you can ignore this email."
+                );
 
-        $mailer->send($email);
+            $mailer->send($email);
+        }
 
         return $this->json([
             'message' => 'User registered successfully. Please check your email to verify your account.'
