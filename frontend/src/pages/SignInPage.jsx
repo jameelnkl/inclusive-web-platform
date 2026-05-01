@@ -111,6 +111,20 @@ function SignInPage() {
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </div>
+
+              <div style={{ textAlign: "right", marginTop: "8px" }}>
+                <Link
+                  to="/forgot-password"
+                  style={{
+                    fontSize: "14px",
+                    color: "#1e3a8a",
+                    fontWeight: "600",
+                    textDecoration: "none",
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             {error && <p className="auth-error">{error}</p>}
