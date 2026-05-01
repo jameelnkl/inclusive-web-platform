@@ -36,6 +36,42 @@ export async function loginUser(credentials) {
   return data;
 }
 
+export async function forgotPassword(email) {
+  const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || "Something went wrong");
+  }
+
+  return data;
+}
+
+export async function resetPassword(token, password) {
+  const response = await fetch(`${API_BASE_URL}/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token, password }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || "Something went wrong");
+  }
+
+  return data;
+}
+
 export function decodeJwt(token) {
   try {
     const base64Url = token.split(".")[1];

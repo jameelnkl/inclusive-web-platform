@@ -111,6 +111,10 @@ function SignInPage() {
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </div>
+
+              <div className="forgot-password-link">
+                <Link to="/forgot-password">Forgot password?</Link>
+              </div>
             </div>
 
             {error && <p className="auth-error">{error}</p>}

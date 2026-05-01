@@ -19,3 +19,9 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     Require all granted\n\
 </Directory>\n' > /etc/apache2/conf-available/app.conf \
     && a2enconf app
+
+COPY composer.json composer.lock ./
+RUN COMPOSER_PROCESS_TIMEOUT=600 composer install --no-interaction --no-scripts --no-autoloader
+
+COPY . .
+RUN composer dump-autoload --optimize
