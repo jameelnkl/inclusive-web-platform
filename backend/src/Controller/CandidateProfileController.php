@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\CandidateProfile;
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Attribute\Route;
+
+class CandidateProfileController extends AbstractController
+{
+    private function getUserFromToken(
+        Request $request,
+        JWTEncoderInterface $jwtEncoder,
+        EntityManagerInterface $entityManager
+    ): User|JsonResponse {
+        $token = $request->headers->get('X-Auth-Token');
+
+        if (!$token) {
+            return $this->json(['message' => 'Missing authentication token.'], 401);
+        }
+
+        try {
+            $decodedToken = $jwtEncoder->decode($token);
+        } catch (\Throwable $e) {
+            return $this->json(['message' => 'Invalid authentication token.'], 401);
+        }
+
+        $identifier = $decodedToken['username'] ?? null;
+
+        if (!$identifier) {
+            return $this->json(['message' => 'Invalid token payload.'], 401);
+        }
+
+        $user = $entityManager
+            ->getRepository(User::class)
+            ->findOneBy(['email' => $identifier]);
+
+        if (!$user) {
+            $user = $entityManager
+                ->getRepository(User::class)
+                ->findOneBy(['username' => $identifier]);
+        }
+
+        if (!$user) {
+            return $this->json(['message' => 'User not found.'], 404);
+        }
+
+        return $user;
+    }
+
+    #[Route('/api/candidate/profile', name: 'candidate_profile_get', methods: ['GET'])]
+    public function getProfile(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        JWTEncoderInterface $jwtEncoder
+    ): JsonResponse {
+        $user = $this->getUserFromToken($request, $jwtEncoder, $entityManager);
+
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        $profile = $user->getCandidateProfile();
+
+        return $this->json([
+            'profile' => [
+                'username' => $user->getUsername(),
+                'email' => $user->getEmail(),
+                'selectedDisabilities' => $profile ? $profile->getSelectedDisabilities() : [],
+                'remainingAbilities' => $profile ? $profile->getRemainingAbilities() : [],
+                'updatedAt' => $profile && $profile->getUpdatedAt()
+                    ? $profile->getUpdatedAt()->format('Y-m-d H:i:s')
+                    : null,
+            ],
+        ]);
+    }
+
+    #[Route('/api/candidate/profile', name: 'candidate_profile_update', methods: ['PATCH'])]
+    public function updateProfile(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        JWTEncoderInterface $jwtEncoder
+    ): JsonResponse {
+        $user = $this->getUserFromToken($request, $jwtEncoder, $entityManager);
+
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['selectedDisabilities']) || !is_array($data['selectedDisabilities'])) {
+            return $this->json([
+                'message' => 'selectedDisabilities must be an array.'
+            ], 400);
+        }
+
+        $profile = $user->getCandidateProfile();
+
+        if (!$profile) {
+            $profile = new CandidateProfile();
+            $profile->setUser($user);
+        }
+
+        $profile->setSelectedDisabilities($data['selectedDisabilities']);
+        $profile->setRemainingAbilities([]);
+        $profile->setUpdatedAt(new \DateTimeImmutable());
+
+        $entityManager->persist($profile);
+        $entityManager->flush();
+
+        return $this->json([
+            'message' => 'Profile saved successfully.',
+            'profile' => [
+                'username' => $user->getUsername(),
+                'email' => $user->getEmail(),
+                'selectedDisabilities' => $profile->getSelectedDisabilities(),
+                'remainingAbilities' => $profile->getRemainingAbilities(),
+                'updatedAt' => $profile->getUpdatedAt()->format('Y-m-d H:i:s'),
+            ],
+        ]);
+    }
+}

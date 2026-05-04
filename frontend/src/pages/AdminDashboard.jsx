@@ -9,6 +9,9 @@ function AdminDashboard() {
   const [hoveredTab, setHoveredTab] = useState(null);
 
   const [users, setUsers] = useState([]);
+  const [candidateProfiles, setCandidateProfiles] = useState([]);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -34,6 +37,8 @@ function AdminDashboard() {
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const isArchivedView = activeTab === "ARCHIVED_USERS";
+  const isUserProfilesView = activeTab === "USER_PROFILES";
+  const isApplicationsView = activeTab === "APPLICATIONS";
 
   async function fetchUsers(tab = activeTab) {
     try {
@@ -73,7 +78,54 @@ function AdminDashboard() {
     }
   }
 
+  async function fetchCandidateProfiles() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const token = getToken();
+
+      if (!token) {
+        navigate("/signin");
+        return;
+      }
+
+      const response = await fetch(
+        "https://fyp-backend-cbaa.onrender.com/api/admin/candidate-profiles",
+        {
+          method: "GET",
+          headers: {
+            "X-Auth-Token": token,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to load candidate profiles.");
+      }
+
+      setCandidateProfiles(data.profiles || []);
+    } catch (err) {
+      setError(err.message || "Something went wrong while loading candidate profiles.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
+    if (activeTab === "USER_PROFILES") {
+      fetchCandidateProfiles();
+      return;
+    }
+
+    if (activeTab === "APPLICATIONS") {
+      setLoading(false);
+      setError("");
+      return;
+    }
+
     fetchUsers(activeTab);
   }, [activeTab]);
 
@@ -88,6 +140,7 @@ function AdminDashboard() {
     setRoleFilter("");
     setVerificationFilter("");
     setError("");
+    setSelectedProfile(null);
   }
 
   function getNavStyle(tab) {
@@ -347,6 +400,14 @@ function AdminDashboard() {
     user.roles.includes("ROLE_ADMIN")
   ).length;
 
+  const totalProfiles = candidateProfiles.length;
+  const completedProfiles = candidateProfiles.filter(
+    (profile) => profile.selectedDisabilities.length > 0
+  ).length;
+  const pendingAbilityProfiles = candidateProfiles.filter(
+    (profile) => profile.remainingAbilities.length === 0
+  ).length;
+
   const filteredUsers = users.filter((user) => {
     const searchValue = searchTerm.toLowerCase().trim();
 
@@ -364,6 +425,15 @@ function AdminDashboard() {
       (verificationFilter === "UNVERIFIED" && !user.isVerified);
 
     return matchesSearch && matchesRole && matchesVerification;
+  });
+
+  const filteredProfiles = candidateProfiles.filter((profile) => {
+    const searchValue = searchTerm.toLowerCase().trim();
+
+    return (
+      profile.username.toLowerCase().includes(searchValue) ||
+      profile.email.toLowerCase().includes(searchValue)
+    );
   });
 
   return (
@@ -391,23 +461,19 @@ function AdminDashboard() {
           </button>
 
           <button
-            style={{
-              ...styles.navItem,
-              ...(hoveredTab === "APPLICATIONS" ? styles.hoveredNavItem : {}),
-            }}
+            style={getNavStyle("APPLICATIONS")}
             onMouseEnter={() => setHoveredTab("APPLICATIONS")}
             onMouseLeave={() => setHoveredTab(null)}
+            onClick={() => handleTabChange("APPLICATIONS")}
           >
             Applications
           </button>
 
           <button
-            style={{
-              ...styles.navItem,
-              ...(hoveredTab === "USER PROFILES" ? styles.hoveredNavItem : {}),
-            }}
-            onMouseEnter={() => setHoveredTab("USER PROFILES")}
+            style={getNavStyle("USER_PROFILES")}
+            onMouseEnter={() => setHoveredTab("USER_PROFILES")}
             onMouseLeave={() => setHoveredTab(null)}
+            onClick={() => handleTabChange("USER_PROFILES")}
           >
             User Profiles
           </button>
@@ -423,192 +489,379 @@ function AdminDashboard() {
           <h1 style={styles.title}>ADMIN DASHBOARD</h1>
         </div>
 
-        <section style={styles.cards}>
-          <div style={styles.card}>
-            <p style={styles.cardLabel}>
-              {isArchivedView ? "Archived Users" : "Active Users"}
-            </p>
-            <h2 style={styles.cardValue}>{totalUsers}</h2>
-          </div>
+        {isUserProfilesView ? (
+          <>
+            <section style={styles.cards}>
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Candidate Profiles</p>
+                <h2 style={styles.cardValue}>{totalProfiles}</h2>
+              </div>
 
-          <div style={styles.card}>
-            <p style={styles.cardLabel}>Verified Emails</p>
-            <h2 style={styles.cardValue}>{verifiedUsers}</h2>
-          </div>
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Completed Profiles</p>
+                <h2 style={styles.cardValue}>{completedProfiles}</h2>
+              </div>
 
-          <div style={styles.card}>
-            <p style={styles.cardLabel}>Unverified Users</p>
-            <h2 style={styles.cardValue}>{unverifiedUsers}</h2>
-          </div>
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Pending Abilities</p>
+                <h2 style={styles.cardValue}>{pendingAbilityProfiles}</h2>
+              </div>
 
-          <div style={styles.card}>
-            <p style={styles.cardLabel}>Admins</p>
-            <h2 style={styles.cardValue}>{adminUsers}</h2>
-          </div>
-        </section>
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Applications</p>
+                <h2 style={styles.cardValue}>0</h2>
+              </div>
+            </section>
 
-        <section style={styles.tableSection}>
-          <div style={styles.tableHeader}>
-            <h2 style={styles.sectionTitle}>
-              {isArchivedView ? "ARCHIVED USERS" : "USERS"}
-            </h2>
-          </div>
+            <section style={styles.tableSection}>
+              <div style={styles.tableHeader}>
+                <h2 style={styles.sectionTitle}>USER PROFILES</h2>
+              </div>
 
-          <div style={styles.filtersRow}>
-            <input
-              type="text"
-              placeholder="Search by username or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={styles.searchInput}
-            />
+              <input
+                type="text"
+                placeholder="Search candidate profile by username or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={styles.profileSearchInput}
+              />
 
-            <select
-              value={roleFilter}
-              onChange={handleRoleFilterChange}
-              style={styles.filterSelect}
-            >
-              <option value="" disabled hidden>
-                Filter by Role
-              </option>
-              <option value="RESET">--</option>
-              <option value="ADMIN">Admin</option>
-              <option value="USER">User</option>
-              <option value="EMPLOYER">Employer</option>
-            </select>
+              {loading && <p style={styles.infoText}>Loading profiles...</p>}
 
-            <select
-              value={verificationFilter}
-              onChange={handleVerificationFilterChange}
-              style={styles.filterSelect}
-            >
-              <option value="" disabled hidden>
-                Filter by Email Status
-              </option>
-              <option value="RESET">--</option>
-              <option value="VERIFIED">Verified email</option>
-              <option value="UNVERIFIED">Unverified email</option>
-            </select>
-          </div>
+              {error && <p style={styles.errorText}>{error}</p>}
 
-          {!loading && !error && (
-            <p style={styles.resultsText}>
-              Showing {filteredUsers.length} of {users.length}{" "}
-              {isArchivedView ? "archived users" : "users"}
-            </p>
-          )}
+              {!loading && !error && (
+                <div style={styles.profileGrid}>
+                  {filteredProfiles.map((profile) => (
+                    <div key={profile.id} style={styles.profileCard}>
+                      <div style={styles.profileAvatar}>
+                        {profile.username.charAt(0).toUpperCase()}
+                      </div>
 
-          {loading && <p style={styles.infoText}>Loading users...</p>}
+                      <h3 style={styles.profileName}>{profile.username}</h3>
+                      <p style={styles.profileEmail}>{profile.email}</p>
 
-          {error && <p style={styles.errorText}>{error}</p>}
+                      <div style={styles.profileStats}>
+                        <span style={styles.profileStat}>
+                          {profile.selectedDisabilities.length} disabilities
+                        </span>
 
-          {!loading && !error && (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>#</th>
-                    <th style={styles.th}>USERNAME</th>
-                    <th style={styles.th}>EMAIL</th>
-                    <th style={styles.th}>ROLE</th>
-                    <th style={styles.th}>VERIFIED</th>
-                    <th style={styles.actionsTh}>ACTIONS</th>
-                  </tr>
-                </thead>
+                        <span style={styles.profileStat}>
+                          {profile.remainingAbilities.length > 0
+                            ? "Abilities ready"
+                            : "Abilities pending"}
+                        </span>
 
-                <tbody>
-                  {filteredUsers.map((user, index) => (
-                    <tr key={user.id}>
-                      <td style={styles.td}>{index + 1}</td>
-                      <td style={styles.td}>{user.username}</td>
-                      <td style={styles.td}>{user.email}</td>
+                        <span style={styles.profileStat}>
+                          {profile.applications.length} applications
+                        </span>
+                      </div>
 
-                      <td style={styles.td}>
-                        <div style={styles.centerCell}>
-                          <span style={styles.roleBadge}>{formatRole(user)}</span>
-                        </div>
-                      </td>
-
-                      <td style={styles.td}>
-                        <div style={styles.centerCell}>
-                          <span
-                            style={{
-                              ...styles.statusBadge,
-                              ...(user.isVerified
-                                ? styles.verified
-                                : styles.unverified),
-                            }}
-                          >
-                            {user.isVerified ? "Verified" : "Unverified"}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td style={styles.actionsTd}>
-                        <div style={styles.actions}>
-                          {!isArchivedView ? (
-                            <>
-                              <button
-                                style={styles.actionButton}
-                                onClick={() => openEditModal(user)}
-                                disabled={actionLoadingId === user.id}
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                onClick={() => setUserToArchive(user)}
-                                style={styles.archiveButton}
-                                disabled={actionLoadingId === user.id}
-                              >
-                                Archive
-                              </button>
-
-                              <button
-                                onClick={() => setUserToDelete(user)}
-                                style={styles.deleteButton}
-                              >
-                                Delete
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => handleRestoreUser(user)}
-                                style={styles.restoreButton}
-                                disabled={actionLoadingId === user.id}
-                              >
-                                {actionLoadingId === user.id
-                                  ? "Restoring..."
-                                  : "Restore"}
-                              </button>
-
-                              <button
-                                onClick={() => setUserToDelete(user)}
-                                style={styles.deleteButton}
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                      <button
+                        style={styles.viewProfileButton}
+                        onClick={() => setSelectedProfile(profile)}
+                      >
+                        View Profile
+                      </button>
+                    </div>
                   ))}
-                </tbody>
-              </table>
 
-              {filteredUsers.length === 0 && (
-                <p style={styles.infoText}>
-                  {isArchivedView
-                    ? "No archived users match your search or filters."
-                    : "No users match your search or filters."}
+                  {filteredProfiles.length === 0 && (
+                    <p style={styles.infoText}>
+                      No candidate profiles match your search.
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          </>
+        ) : isApplicationsView ? (
+          <section style={styles.tableSection}>
+            <div style={styles.tableHeader}>
+              <h2 style={styles.sectionTitle}>APPLICATIONS</h2>
+            </div>
+
+            <p style={styles.infoText}>
+              Applications will appear here after candidates apply to jobs.
+            </p>
+          </section>
+        ) : (
+          <>
+            <section style={styles.cards}>
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>
+                  {isArchivedView ? "Archived Users" : "Active Users"}
+                </p>
+                <h2 style={styles.cardValue}>{totalUsers}</h2>
+              </div>
+
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Verified Emails</p>
+                <h2 style={styles.cardValue}>{verifiedUsers}</h2>
+              </div>
+
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Unverified Users</p>
+                <h2 style={styles.cardValue}>{unverifiedUsers}</h2>
+              </div>
+
+              <div style={styles.card}>
+                <p style={styles.cardLabel}>Admins</p>
+                <h2 style={styles.cardValue}>{adminUsers}</h2>
+              </div>
+            </section>
+
+            <section style={styles.tableSection}>
+              <div style={styles.tableHeader}>
+                <h2 style={styles.sectionTitle}>
+                  {isArchivedView ? "ARCHIVED USERS" : "USERS"}
+                </h2>
+              </div>
+
+              <div style={styles.filtersRow}>
+                <input
+                  type="text"
+                  placeholder="Search by username or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={styles.searchInput}
+                />
+
+                <select
+                  value={roleFilter}
+                  onChange={handleRoleFilterChange}
+                  style={styles.filterSelect}
+                >
+                  <option value="" disabled hidden>
+                    Filter by Role
+                  </option>
+                  <option value="RESET">--</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="USER">User</option>
+                  <option value="EMPLOYER">Employer</option>
+                </select>
+
+                <select
+                  value={verificationFilter}
+                  onChange={handleVerificationFilterChange}
+                  style={styles.filterSelect}
+                >
+                  <option value="" disabled hidden>
+                    Filter by Email Status
+                  </option>
+                  <option value="RESET">--</option>
+                  <option value="VERIFIED">Verified email</option>
+                  <option value="UNVERIFIED">Unverified email</option>
+                </select>
+              </div>
+
+              {!loading && !error && (
+                <p style={styles.resultsText}>
+                  Showing {filteredUsers.length} of {users.length}{" "}
+                  {isArchivedView ? "archived users" : "users"}
+                </p>
+              )}
+
+              {loading && <p style={styles.infoText}>Loading users...</p>}
+
+              {error && <p style={styles.errorText}>{error}</p>}
+
+              {!loading && !error && (
+                <div style={styles.tableWrapper}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>#</th>
+                        <th style={styles.th}>USERNAME</th>
+                        <th style={styles.th}>EMAIL</th>
+                        <th style={styles.th}>ROLE</th>
+                        <th style={styles.th}>VERIFIED</th>
+                        <th style={styles.actionsTh}>ACTIONS</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {filteredUsers.map((user, index) => (
+                        <tr key={user.id}>
+                          <td style={styles.td}>{index + 1}</td>
+                          <td style={styles.td}>{user.username}</td>
+                          <td style={styles.td}>{user.email}</td>
+
+                          <td style={styles.td}>
+                            <div style={styles.centerCell}>
+                              <span style={styles.roleBadge}>{formatRole(user)}</span>
+                            </div>
+                          </td>
+
+                          <td style={styles.td}>
+                            <div style={styles.centerCell}>
+                              <span
+                                style={{
+                                  ...styles.statusBadge,
+                                  ...(user.isVerified
+                                    ? styles.verified
+                                    : styles.unverified),
+                                }}
+                              >
+                                {user.isVerified ? "Verified" : "Unverified"}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td style={styles.actionsTd}>
+                            <div style={styles.actions}>
+                              {!isArchivedView ? (
+                                <>
+                                  <button
+                                    style={styles.actionButton}
+                                    onClick={() => openEditModal(user)}
+                                    disabled={actionLoadingId === user.id}
+                                  >
+                                    Edit
+                                  </button>
+
+                                  <button
+                                    onClick={() => setUserToArchive(user)}
+                                    style={styles.archiveButton}
+                                    disabled={actionLoadingId === user.id}
+                                  >
+                                    Archive
+                                  </button>
+
+                                  <button
+                                    onClick={() => setUserToDelete(user)}
+                                    style={styles.deleteButton}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleRestoreUser(user)}
+                                    style={styles.restoreButton}
+                                    disabled={actionLoadingId === user.id}
+                                  >
+                                    {actionLoadingId === user.id
+                                      ? "Restoring..."
+                                      : "Restore"}
+                                  </button>
+
+                                  <button
+                                    onClick={() => setUserToDelete(user)}
+                                    style={styles.deleteButton}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {filteredUsers.length === 0 && (
+                    <p style={styles.infoText}>
+                      {isArchivedView
+                        ? "No archived users match your search or filters."
+                        : "No users match your search or filters."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </main>
+
+      {selectedProfile && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.profileModal}>
+            <h2 style={styles.modalTitle}>Candidate Profile</h2>
+
+            <div style={styles.profileModalHeader}>
+              <div style={styles.profileAvatarLarge}>
+                {selectedProfile.username.charAt(0).toUpperCase()}
+              </div>
+
+              <div>
+                <h3 style={styles.profileModalName}>{selectedProfile.username}</h3>
+                <p style={styles.profileModalEmail}>{selectedProfile.email}</p>
+              </div>
+            </div>
+
+            <div style={styles.profileSection}>
+              <h3 style={styles.profileSectionTitle}>Selected Disabilities</h3>
+
+              {selectedProfile.selectedDisabilities.length > 0 ? (
+                <div>
+                  {selectedProfile.selectedDisabilities.map((disability) => (
+                    <span key={disability} style={styles.profileChip}>
+                      {disability}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p style={styles.profileEmptyText}>No disabilities selected yet.</p>
+              )}
+            </div>
+
+            <div style={styles.profileSection}>
+              <h3 style={styles.profileSectionTitle}>Remaining Abilities</h3>
+
+              {selectedProfile.remainingAbilities.length > 0 ? (
+                <div>
+                  {selectedProfile.remainingAbilities.map((ability) => (
+                    <span key={ability} style={styles.abilityChip}>
+                      {ability}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p style={styles.profileEmptyText}>
+                  Remaining abilities are pending analysis.
                 </p>
               )}
             </div>
-          )}
-        </section>
-      </main>
+
+            <div style={styles.profileSection}>
+              <h3 style={styles.profileSectionTitle}>Applications</h3>
+
+              {selectedProfile.applications.length > 0 ? (
+                <div>
+                  {selectedProfile.applications.map((application, index) => (
+                    <p key={index} style={styles.profileEmptyText}>
+                      {application.jobTitle}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p style={styles.profileEmptyText}>
+                  No applications submitted yet.
+                </p>
+              )}
+            </div>
+
+            <div style={styles.profileSection}>
+              <h3 style={styles.profileSectionTitle}>Last Updated</h3>
+              <p style={styles.profileEmptyText}>
+                {selectedProfile.updatedAt || "Not updated yet."}
+              </p>
+            </div>
+
+            <div style={styles.modalActions}>
+              <button
+                onClick={() => setSelectedProfile(null)}
+                style={styles.confirmEditButton}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {userToEdit && (
         <div style={styles.modalOverlay}>
@@ -940,6 +1193,17 @@ const styles = {
     boxSizing: "border-box",
   },
 
+  profileSearchInput: {
+    width: "100%",
+    padding: "13px 15px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    fontSize: "14px",
+    outline: "none",
+    boxSizing: "border-box",
+    marginBottom: "22px",
+  },
+
   filterSelect: {
     width: "100%",
     padding: "12px 14px",
@@ -1100,6 +1364,76 @@ const styles = {
     minWidth: "74px",
   },
 
+  profileGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(245px, 1fr))",
+    gap: "18px",
+  },
+
+  profileCard: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
+    padding: "22px",
+    textAlign: "center",
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+  },
+
+  profileAvatar: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "50%",
+    background: "#1d4ed8",
+    color: "white",
+    margin: "0 auto 12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "800",
+    fontSize: "22px",
+  },
+
+  profileName: {
+    margin: "0 0 6px",
+    color: "#111827",
+    fontSize: "18px",
+    fontWeight: "800",
+  },
+
+  profileEmail: {
+    margin: "0 0 14px",
+    color: "#6b7280",
+    fontSize: "13px",
+    wordBreak: "break-word",
+  },
+
+  profileStats: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginBottom: "18px",
+  },
+
+  profileStat: {
+    background: "white",
+    color: "#374151",
+    border: "1px solid #e5e7eb",
+    borderRadius: "999px",
+    padding: "7px 10px",
+    fontSize: "13px",
+    fontWeight: "700",
+  },
+
+  viewProfileButton: {
+    border: "none",
+    background: "#1d4ed8",
+    color: "white",
+    padding: "10px 14px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+
   modalOverlay: {
     position: "fixed",
     inset: 0,
@@ -1119,6 +1453,95 @@ const styles = {
     padding: "28px",
     boxShadow: "0 25px 50px rgba(15, 23, 42, 0.25)",
     textAlign: "center",
+  },
+
+  profileModal: {
+    width: "100%",
+    maxWidth: "680px",
+    maxHeight: "88vh",
+    overflowY: "auto",
+    background: "white",
+    borderRadius: "20px",
+    padding: "30px",
+    boxShadow: "0 25px 50px rgba(15, 23, 42, 0.25)",
+  },
+
+  profileModalHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    background: "#f9fafb",
+    borderRadius: "16px",
+    padding: "18px",
+    marginTop: "18px",
+    marginBottom: "20px",
+  },
+
+  profileAvatarLarge: {
+    width: "64px",
+    height: "64px",
+    borderRadius: "50%",
+    background: "#1d4ed8",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "800",
+    fontSize: "26px",
+  },
+
+  profileModalName: {
+    margin: 0,
+    color: "#111827",
+    fontSize: "20px",
+    fontWeight: "800",
+  },
+
+  profileModalEmail: {
+    margin: "6px 0 0",
+    color: "#6b7280",
+    fontSize: "14px",
+  },
+
+  profileSection: {
+    borderTop: "1px solid #e5e7eb",
+    paddingTop: "16px",
+    marginTop: "16px",
+  },
+
+  profileSectionTitle: {
+    margin: "0 0 12px",
+    color: "#111827",
+    fontSize: "16px",
+    fontWeight: "800",
+  },
+
+  profileChip: {
+    display: "inline-block",
+    background: "#eef2ff",
+    color: "#3730a3",
+    padding: "7px 10px",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: "700",
+    margin: "0 8px 8px 0",
+  },
+
+  abilityChip: {
+    display: "inline-block",
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "7px 10px",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: "700",
+    margin: "0 8px 8px 0",
+  },
+
+  profileEmptyText: {
+    color: "#6b7280",
+    fontSize: "14px",
+    margin: 0,
   },
 
   editModal: {
@@ -1238,6 +1661,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     gap: "12px",
+    marginTop: "22px",
   },
 
   cancelModalButton: {

@@ -139,6 +139,52 @@ final class AdminUserController extends AbstractController
         ]);
     }
 
+    #[Route('/api/admin/candidate-profiles', name: 'api_admin_candidate_profiles', methods: ['GET'])]
+    public function listCandidateProfiles(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        JWTEncoderInterface $jwtEncoder
+    ): JsonResponse {
+        $adminCheck = $this->verifyAdmin($request, $jwtEncoder);
+
+        if ($adminCheck instanceof JsonResponse) {
+            return $adminCheck;
+        }
+
+        $users = $entityManager
+            ->getRepository(User::class)
+            ->findBy(['isArchived' => false], ['id' => 'ASC']);
+
+        $profilesData = [];
+
+        foreach ($users as $user) {
+            $roles = $user->getRoles();
+
+            if (in_array('ROLE_ADMIN', $roles, true) || in_array('ROLE_EMPLOYER', $roles, true)) {
+                continue;
+            }
+
+            $profile = $user->getCandidateProfile();
+
+            $profilesData[] = [
+                'id' => $user->getId(),
+                'username' => $user->getUsername(),
+                'email' => $user->getEmail(),
+                'isVerified' => $user->isVerified(),
+                'selectedDisabilities' => $profile ? $profile->getSelectedDisabilities() : [],
+                'remainingAbilities' => $profile ? $profile->getRemainingAbilities() : [],
+                'updatedAt' => $profile && $profile->getUpdatedAt()
+                    ? $profile->getUpdatedAt()->format('Y-m-d H:i:s')
+                    : null,
+                'applications' => [],
+            ];
+        }
+
+        return $this->json([
+            'profiles' => $profilesData,
+        ]);
+    }
+
     #[Route('/api/admin/users/{id<\d+>}', name: 'api_admin_users_update', methods: ['PATCH'])]
     public function updateUser(
         int $id,

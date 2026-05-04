@@ -6,6 +6,7 @@ import "../styles/authPages.css";
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [sentEmail, setSentEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,8 @@ function ForgotPasswordPage() {
       setLoading(true);
 
       const data = await requestPasswordReset(email);
-      setMessage(data.message || "If an account exists, a reset link has been sent.");
+      setSentEmail(email);
+      setMessage(data.message || "We sent a reset link to your email.");
     } catch (err) {
       setError(err.message || "Failed to request password reset.");
     } finally {
@@ -36,46 +38,59 @@ function ForgotPasswordPage() {
     <div className="auth-page">
       <div className="auth-shell">
         <div className="auth-left">
-          <span className="auth-badge">Password Help</span>
-          <h1 className="auth-title">Forgot Password</h1>
+          <span className="auth-badge">🔐 Password Reset</span>
+          <h1 className="auth-title">Forgot Password?</h1>
           <p className="auth-subtitle">
-            Enter your email and we will send you a link to reset your password.
+            No worries! Enter your email address and we&apos;ll send you a secure
+            link to reset your password.
           </p>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="auth-field">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="auth-input"
-              />
-            </div>
+          {!message ? (
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="auth-field">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="auth-input"
+                />
+              </div>
 
-            {error && <p className="auth-error">{error}</p>}
+              {error && <p className="auth-error">{error}</p>}
 
-            {message && (
-              <p
-                style={{
-                  color: "#166534",
-                  background: "#dcfce7",
-                  padding: "12px",
-                  borderRadius: "12px",
-                  fontWeight: "600",
-                }}
-              >
-                {message}
+              <button type="submit" className="primary-btn full-width" disabled={loading}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </button>
+            </form>
+          ) : (
+            <div className="reset-success-card">
+              <div className="reset-success-icon">📬</div>
+
+              <h3>Check your inbox!</h3>
+
+              <p>
+                We sent a reset link to <strong>{sentEmail}</strong>. It expires in
+                1 hour.
               </p>
-            )}
 
-            <button type="submit" className="primary-btn full-width" disabled={loading}>
-              {loading ? "Sending..." : "Send Reset Link"}
-            </button>
-          </form>
+              <p className="reset-success-note">
+                Didn&apos;t receive it? Check your spam folder or{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMessage("");
+                    setError("");
+                  }}
+                >
+                  try again
+                </button>
+              </p>
+            </div>
+          )}
 
           <p className="auth-footer">
             Remembered your password? <Link to="/signin">Sign in</Link>
@@ -85,11 +100,7 @@ function ForgotPasswordPage() {
         <div className="auth-right">
           <div className="logo-panel">
             <div className="logo-glow"></div>
-            <img
-              src={logoImage}
-              alt="John Hospitality logo"
-              className="logo-image"
-            />
+            <img src={logoImage} alt="John Hospitality logo" className="logo-image" />
           </div>
         </div>
       </div>

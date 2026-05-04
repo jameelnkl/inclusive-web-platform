@@ -12,7 +12,7 @@ function WelcomePage() {
           <span className="auth-badge">Join Hospitality</span>
 
           <h1 className="auth-heading">
-            Inclusive hospitality starts with the right opportunity.
+            Inclusive Hospitality starts with the right opportunity.
           </h1>
 
           <p className="auth-text">
