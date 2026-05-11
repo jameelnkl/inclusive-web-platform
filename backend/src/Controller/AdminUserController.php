@@ -2,12 +2,15 @@
 
 namespace App\Controller;
 
+use App\Entity\JobApplication;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -17,12 +20,10 @@ final class AdminUserController extends AbstractController
 {
     private function verifyAdmin(Request $request, JWTEncoderInterface $jwtEncoder): array|JsonResponse
     {
-        $token = $request->headers->get('X-Auth-Token');
+        $token = $request->headers->get('X-Auth-Token') ?: $request->query->get('token');
 
         if (!$token) {
-            return $this->json([
-                'message' => 'Missing authentication token.'
-            ], 401);
+            return $this->json(['message' => 'Missing authentication token.'], 401);
         }
 
         try {
@@ -37,9 +38,7 @@ final class AdminUserController extends AbstractController
         $roles = $decodedToken['roles'] ?? [];
 
         if (!in_array('ROLE_ADMIN', $roles, true)) {
-            return $this->json([
-                'message' => 'Access denied. Admin role required.'
-            ], 403);
+            return $this->json(['message' => 'Access denied. Admin role required.'], 403);
         }
 
         return $decodedToken;
@@ -57,10 +56,31 @@ final class AdminUserController extends AbstractController
         ];
     }
 
+    private function formatApplication(JobApplication $application): array
+    {
+        $candidate = $application->getCandidate();
+        $job = $application->getJobPost();
+
+        return [
+            'id' => $application->getId(),
+            'candidateId' => $candidate?->getId(),
+            'candidateName' => $candidate?->getUsername(),
+            'candidateEmail' => $candidate?->getEmail(),
+            'jobTitle' => $job?->getTitle(),
+            'companyName' => method_exists($job, 'getCompanyName') ? $job?->getCompanyName() : null,
+            'status' => $application->getStatus(),
+            'applicationOriginalName' => $application->getApplicationOriginalName(),
+            'hasApplicationDocument' => $application->getApplicationFileName() !== null,
+            'recommendationOriginalName' => $application->getRecommendationOriginalName(),
+            'hasRecommendationLetter' => $application->getRecommendationFileName() !== null,
+            'createdAt' => $application->getCreatedAt()?->format('Y-m-d H:i:s'),
+            'updatedAt' => $application->getUpdatedAt()?->format('Y-m-d H:i:s'),
+        ];
+    }
+
     private function sendVerificationEmail(User $user, MailerInterface $mailer): void
     {
         $baseUrl = $_ENV['VERIFICATION_BASE_URL'] ?? 'https://fyp-backend-cbaa.onrender.com';
-
         $verificationLink = $baseUrl . '/api/verify-email?token=' . $user->getVerificationToken();
 
         $email = (new Email())
@@ -101,14 +121,8 @@ final class AdminUserController extends AbstractController
             ->getRepository(User::class)
             ->findBy(['isArchived' => false], ['id' => 'ASC']);
 
-        $usersData = [];
-
-        foreach ($users as $user) {
-            $usersData[] = $this->formatUser($user);
-        }
-
         return $this->json([
-            'users' => $usersData,
+            'users' => array_map(fn(User $user) => $this->formatUser($user), $users),
         ]);
     }
 
@@ -128,14 +142,8 @@ final class AdminUserController extends AbstractController
             ->getRepository(User::class)
             ->findBy(['isArchived' => true], ['id' => 'ASC']);
 
-        $usersData = [];
-
-        foreach ($users as $user) {
-            $usersData[] = $this->formatUser($user);
-        }
-
         return $this->json([
-            'users' => $usersData,
+            'users' => array_map(fn(User $user) => $this->formatUser($user), $users),
         ]);
     }
 
@@ -166,6 +174,10 @@ final class AdminUserController extends AbstractController
 
             $profile = $user->getCandidateProfile();
 
+            $applications = $entityManager
+                ->getRepository(JobApplication::class)
+                ->findBy(['candidate' => $user], ['id' => 'DESC']);
+
             $profilesData[] = [
                 'id' => $user->getId(),
                 'username' => $user->getUsername(),
@@ -176,13 +188,91 @@ final class AdminUserController extends AbstractController
                 'updatedAt' => $profile && $profile->getUpdatedAt()
                     ? $profile->getUpdatedAt()->format('Y-m-d H:i:s')
                     : null,
-                'applications' => [],
+                'applications' => array_map(
+                    fn(JobApplication $application) => $this->formatApplication($application),
+                    $applications
+                ),
             ];
         }
 
         return $this->json([
             'profiles' => $profilesData,
         ]);
+    }
+
+    #[Route('/api/admin/applications', name: 'api_admin_applications', methods: ['GET'])]
+    public function listAllApplications(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        JWTEncoderInterface $jwtEncoder
+    ): JsonResponse {
+        $adminCheck = $this->verifyAdmin($request, $jwtEncoder);
+
+        if ($adminCheck instanceof JsonResponse) {
+            return $adminCheck;
+        }
+
+        $applications = $entityManager
+            ->getRepository(JobApplication::class)
+            ->findBy([], ['id' => 'DESC']);
+
+        return $this->json([
+            'applications' => array_map(
+                fn(JobApplication $application) => $this->formatApplication($application),
+                $applications
+            ),
+        ]);
+    }
+
+    #[Route('/api/admin/applications/{id}/download/{type}', name: 'api_admin_application_download', methods: ['GET'])]
+    public function downloadApplicationFile(
+        int $id,
+        string $type,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        JWTEncoderInterface $jwtEncoder
+    ): BinaryFileResponse|JsonResponse {
+        $adminCheck = $this->verifyAdmin($request, $jwtEncoder);
+
+        if ($adminCheck instanceof JsonResponse) {
+            return $adminCheck;
+        }
+
+        $application = $entityManager->getRepository(JobApplication::class)->find($id);
+
+        if (!$application) {
+            return $this->json(['message' => 'Application not found.'], 404);
+        }
+
+        if ($type === 'application') {
+            $storedName = $application->getApplicationFileName();
+            $originalName = $application->getApplicationOriginalName() ?: 'application-document';
+        } elseif ($type === 'recommendation') {
+            $storedName = $application->getRecommendationFileName();
+            $originalName = $application->getRecommendationOriginalName() ?: 'recommendation-letter';
+        } else {
+            return $this->json(['message' => 'Invalid file type.'], 400);
+        }
+
+        if (!$storedName) {
+            return $this->json(['message' => 'File not provided.'], 404);
+        }
+
+        $filePath = $this->getParameter('kernel.project_dir') . '/public/uploads/applications/' . $storedName;
+
+        if (!file_exists($filePath)) {
+            return $this->json(['message' => 'File not found on server.'], 404);
+        }
+
+        $response = new BinaryFileResponse($filePath);
+
+        $disposition = $request->query->get('download') === '1'
+            ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
+            : ResponseHeaderBag::DISPOSITION_INLINE;
+
+        $response->setContentDisposition($disposition, $originalName);
+
+        return $response;
     }
 
     #[Route('/api/admin/users/{id<\d+>}', name: 'api_admin_users_update', methods: ['PATCH'])]
@@ -205,17 +295,13 @@ final class AdminUserController extends AbstractController
             ->find($id);
 
         if (!$user) {
-            return $this->json([
-                'message' => 'User not found.'
-            ], 404);
+            return $this->json(['message' => 'User not found.'], 404);
         }
 
         $data = json_decode($request->getContent(), true);
 
         if (!is_array($data)) {
-            return $this->json([
-                'message' => 'Invalid request body.'
-            ], 400);
+            return $this->json(['message' => 'Invalid request body.'], 400);
         }
 
         $username = trim($data['username'] ?? '');
@@ -223,15 +309,11 @@ final class AdminUserController extends AbstractController
         $password = trim($data['password'] ?? '');
 
         if ($username === '' || $email === '') {
-            return $this->json([
-                'message' => 'Username and email are required.'
-            ], 400);
+            return $this->json(['message' => 'Username and email are required.'], 400);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->json([
-                'message' => 'Invalid email format.'
-            ], 400);
+            return $this->json(['message' => 'Invalid email format.'], 400);
         }
 
         $existingUsernameUser = $entityManager
@@ -239,9 +321,7 @@ final class AdminUserController extends AbstractController
             ->findOneBy(['username' => $username]);
 
         if ($existingUsernameUser && $existingUsernameUser->getId() !== $user->getId()) {
-            return $this->json([
-                'message' => 'This username is already used.'
-            ], 409);
+            return $this->json(['message' => 'This username is already used.'], 409);
         }
 
         $existingEmailUser = $entityManager
@@ -249,9 +329,7 @@ final class AdminUserController extends AbstractController
             ->findOneBy(['email' => $email]);
 
         if ($existingEmailUser && $existingEmailUser->getId() !== $user->getId()) {
-            return $this->json([
-                'message' => 'This email is already used.'
-            ], 409);
+            return $this->json(['message' => 'This email is already used.'], 409);
         }
 
         $emailChanged = strtolower($email) !== strtolower((string) $user->getEmail());
@@ -268,9 +346,7 @@ final class AdminUserController extends AbstractController
 
         if ($password !== '') {
             if (strlen($password) < 8) {
-                return $this->json([
-                    'message' => 'Password must be at least 8 characters long.'
-                ], 400);
+                return $this->json(['message' => 'Password must be at least 8 characters long.'], 400);
             }
 
             $hashedPassword = $passwordHasher->hashPassword($user, $password);
@@ -324,17 +400,13 @@ final class AdminUserController extends AbstractController
             ->find($id);
 
         if (!$user) {
-            return $this->json([
-                'message' => 'User not found.'
-            ], 404);
+            return $this->json(['message' => 'User not found.'], 404);
         }
 
         $currentAdminEmail = $adminCheck['username'] ?? null;
 
         if ($currentAdminEmail === $user->getEmail()) {
-            return $this->json([
-                'message' => 'You cannot archive your own admin account.'
-            ], 400);
+            return $this->json(['message' => 'You cannot archive your own admin account.'], 400);
         }
 
         $user->setIsArchived(true);
@@ -364,9 +436,7 @@ final class AdminUserController extends AbstractController
             ->find($id);
 
         if (!$user) {
-            return $this->json([
-                'message' => 'User not found.'
-            ], 404);
+            return $this->json(['message' => 'User not found.'], 404);
         }
 
         $user->setIsArchived(false);
@@ -396,24 +466,18 @@ final class AdminUserController extends AbstractController
             ->find($id);
 
         if (!$user) {
-            return $this->json([
-                'message' => 'User not found.'
-            ], 404);
+            return $this->json(['message' => 'User not found.'], 404);
         }
 
         $currentAdminEmail = $adminCheck['username'] ?? null;
 
         if ($currentAdminEmail === $user->getEmail()) {
-            return $this->json([
-                'message' => 'You cannot delete your own admin account.'
-            ], 400);
+            return $this->json(['message' => 'You cannot delete your own admin account.'], 400);
         }
 
         $entityManager->remove($user);
         $entityManager->flush();
 
-        return $this->json([
-            'message' => 'User deleted successfully.'
-        ], 200);
+        return $this->json(['message' => 'User deleted successfully.'], 200);
     }
 }

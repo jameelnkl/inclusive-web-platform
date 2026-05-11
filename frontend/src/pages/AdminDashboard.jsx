@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getToken, logout } from "../services/authService";
+import {
+  getToken,
+  logout,
+  getAdminApplications,
+  getAdminApplicationFileUrl,
+} from "../services/authService";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -10,7 +15,9 @@ function AdminDashboard() {
 
   const [users, setUsers] = useState([]);
   const [candidateProfiles, setCandidateProfiles] = useState([]);
+  const [adminApplications, setAdminApplications] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [showProfileApplications, setShowProfileApplications] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -114,6 +121,20 @@ function AdminDashboard() {
     }
   }
 
+  async function fetchAdminApplications() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await getAdminApplications();
+      setAdminApplications(data.applications || []);
+    } catch (err) {
+      setError(err.message || "Something went wrong while loading applications.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (activeTab === "USER_PROFILES") {
       fetchCandidateProfiles();
@@ -121,8 +142,7 @@ function AdminDashboard() {
     }
 
     if (activeTab === "APPLICATIONS") {
-      setLoading(false);
-      setError("");
+      fetchAdminApplications();
       return;
     }
 
@@ -141,6 +161,7 @@ function AdminDashboard() {
     setVerificationFilter("");
     setError("");
     setSelectedProfile(null);
+    setShowProfileApplications(false);
   }
 
   function getNavStyle(tab) {
@@ -393,6 +414,126 @@ function AdminDashboard() {
     return "User";
   }
 
+  function formatStatus(status) {
+    if (!status) return "Pending";
+
+    return status
+      .replace("_", " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  function formatDate(dateValue) {
+    if (!dateValue) return "Not specified";
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return dateValue;
+    }
+
+    return date.toLocaleDateString("en-GB");
+  }
+
+  function renderApplicationFileButtons(application, type) {
+    const hasFile =
+      type === "application"
+        ? application.hasApplicationDocument
+        : application.hasRecommendationLetter;
+
+    const label =
+      type === "application"
+        ? application.applicationOriginalName || "Application document"
+        : application.recommendationOriginalName || "Recommendation letter";
+
+    if (!hasFile) {
+      return <span style={styles.noFileText}>No file</span>;
+    }
+
+    return (
+      <div style={styles.fileActions}>
+        <span style={styles.fileName}>{label}</span>
+
+        <div style={styles.fileButtons}>
+          <a
+            href={getAdminApplicationFileUrl(application.id, type, false)}
+            target="_blank"
+            rel="noreferrer"
+            style={styles.viewFileButton}
+          >
+            View
+          </a>
+
+          <a
+            href={getAdminApplicationFileUrl(application.id, type, true)}
+            target="_blank"
+            rel="noreferrer"
+            style={styles.downloadFileButton}
+          >
+            Download
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  function renderApplicationsTable(applications) {
+    return (
+      <div style={styles.tableWrapper}>
+        <table style={styles.applicationsTable}>
+          <thead>
+            <tr>
+              <th style={styles.smallTh}>#</th>
+              <th style={styles.applicationTh}>Candidate</th>
+              <th style={styles.applicationTh}>Job</th>
+              <th style={styles.applicationTh}>Status</th>
+              <th style={styles.applicationTh}>Application</th>
+              <th style={styles.applicationTh}>Recommendation</th>
+              <th style={styles.applicationTh}>Applied</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {applications.map((application, index) => (
+              <tr key={application.id || index}>
+                <td style={styles.smallTd}>{index + 1}</td>
+                <td style={styles.applicationTd}>
+                  {application.candidateName || "Unknown"}
+                </td>
+                <td style={styles.applicationTd}>
+                  {application.jobTitle || "No job title"}
+                </td>
+
+                <td style={styles.applicationTd}>
+                  <div style={styles.centerCell}>
+                    <span style={styles.roleBadge}>
+                      {formatStatus(application.status)}
+                    </span>
+                  </div>
+                </td>
+
+                <td style={styles.applicationTd}>
+                  {renderApplicationFileButtons(application, "application")}
+                </td>
+
+                <td style={styles.applicationTd}>
+                  {renderApplicationFileButtons(application, "recommendation")}
+                </td>
+
+                <td style={styles.applicationTd}>
+                  {formatDate(application.createdAt)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {applications.length === 0 && (
+          <p style={styles.infoText}>No applications found.</p>
+        )}
+      </div>
+    );
+  }
+
   const totalUsers = users.length;
   const verifiedUsers = users.filter((user) => user.isVerified).length;
   const unverifiedUsers = users.filter((user) => !user.isVerified).length;
@@ -407,6 +548,10 @@ function AdminDashboard() {
   const pendingAbilityProfiles = candidateProfiles.filter(
     (profile) => profile.remainingAbilities.length === 0
   ).length;
+  const totalProfileApplications = candidateProfiles.reduce(
+    (total, profile) => total + (profile.applications?.length || 0),
+    0
+  );
 
   const filteredUsers = users.filter((user) => {
     const searchValue = searchTerm.toLowerCase().trim();
@@ -433,6 +578,16 @@ function AdminDashboard() {
     return (
       profile.username.toLowerCase().includes(searchValue) ||
       profile.email.toLowerCase().includes(searchValue)
+    );
+  });
+
+  const filteredApplications = adminApplications.filter((application) => {
+    const searchValue = searchTerm.toLowerCase().trim();
+
+    return (
+      (application.candidateName || "").toLowerCase().includes(searchValue) ||
+      (application.jobTitle || "").toLowerCase().includes(searchValue) ||
+      (application.status || "").toLowerCase().includes(searchValue)
     );
   });
 
@@ -478,15 +633,20 @@ function AdminDashboard() {
             User Profiles
           </button>
         </nav>
-
-        <button onClick={handleLogout} style={styles.logoutButton}>
-          Logout
-        </button>
       </aside>
 
       <main style={styles.main}>
         <div style={styles.header}>
-          <h1 style={styles.title}>ADMIN DASHBOARD</h1>
+          <button onClick={handleLogout} style={styles.logoutTextButton}>
+            Logout
+          </button>
+
+          <div>
+            <h1 style={styles.title}>Admin Dashboard</h1>
+            <p style={styles.subtitle}>
+              Manage users, applications, and platform activity.
+            </p>
+          </div>
         </div>
 
         {isUserProfilesView ? (
@@ -509,7 +669,7 @@ function AdminDashboard() {
 
               <div style={styles.card}>
                 <p style={styles.cardLabel}>Applications</p>
-                <h2 style={styles.cardValue}>0</h2>
+                <h2 style={styles.cardValue}>{totalProfileApplications}</h2>
               </div>
             </section>
 
@@ -527,7 +687,6 @@ function AdminDashboard() {
               />
 
               {loading && <p style={styles.infoText}>Loading profiles...</p>}
-
               {error && <p style={styles.errorText}>{error}</p>}
 
               {!loading && !error && (
@@ -553,13 +712,16 @@ function AdminDashboard() {
                         </span>
 
                         <span style={styles.profileStat}>
-                          {profile.applications.length} applications
+                          {profile.applications?.length || 0} applications
                         </span>
                       </div>
 
                       <button
                         style={styles.viewProfileButton}
-                        onClick={() => setSelectedProfile(profile)}
+                        onClick={() => {
+                          setSelectedProfile(profile);
+                          setShowProfileApplications(false);
+                        }}
                       >
                         View Profile
                       </button>
@@ -578,17 +740,34 @@ function AdminDashboard() {
         ) : isApplicationsView ? (
           <section style={styles.tableSection}>
             <div style={styles.tableHeader}>
-              <h2 style={styles.sectionTitle}>APPLICATIONS</h2>
+              <h2 style={styles.sectionTitle}>ALL APPLICATIONS</h2>
             </div>
 
-            <p style={styles.infoText}>
-              Applications will appear here after candidates apply to jobs.
-            </p>
+            <input
+              type="text"
+              placeholder="Search by candidate, job, or status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={styles.profileSearchInput}
+            />
+
+            {loading && <p style={styles.infoText}>Loading applications...</p>}
+            {error && <p style={styles.errorText}>{error}</p>}
+
+            {!loading && !error && renderApplicationsTable(filteredApplications)}
           </section>
         ) : (
           <>
             <section style={styles.cards}>
               <div style={styles.card}>
+                <div style={{...styles.cardIcon, ...styles.usersIcon}}>
+                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
+                    <path d="M9 11C11.2 11 13 9.2 13 7C13 4.8 11.2 3 9 3C6.8 3 5 4.8 5 7C5 9.2 6.8 11 9 11Z" />
+                    <path d="M2.5 21C3.2 16.8 5.6 14.5 9 14.5C12.4 14.5 14.8 16.8 15.5 21" />
+                    <path d="M16 10C17.7 10 19 8.7 19 7C19 5.3 17.7 4 16 4" />
+                    <path d="M17 14.8C19.4 15.3 21 17.4 21.5 21" />
+                  </svg>
+                </div>
                 <p style={styles.cardLabel}>
                   {isArchivedView ? "Archived Users" : "Active Users"}
                 </p>
@@ -596,16 +775,34 @@ function AdminDashboard() {
               </div>
 
               <div style={styles.card}>
+                <div style={{...styles.cardIcon, ...styles.verifiedIcon}}>
+                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
+                    <path d="M20 7L10 17L5 12" />
+                  </svg>
+                </div>
                 <p style={styles.cardLabel}>Verified Emails</p>
                 <h2 style={styles.cardValue}>{verifiedUsers}</h2>
               </div>
 
               <div style={styles.card}>
+                <div style={{...styles.cardIcon, ...styles.unverifiedIcon}}>
+                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
+                    <path d="M12 4L21 20H3L12 4Z" />
+                    <path d="M12 9V13" />
+                    <path d="M12 17H12.01" />
+                  </svg>
+                </div>
                 <p style={styles.cardLabel}>Unverified Users</p>
                 <h2 style={styles.cardValue}>{unverifiedUsers}</h2>
               </div>
 
               <div style={styles.card}>
+                <div style={{...styles.cardIcon, ...styles.adminIcon}}>
+                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3L19 6V11C19 15.5 16.2 19.4 12 21C7.8 19.4 5 15.5 5 11V6L12 3Z" />
+                    <path d="M9.5 12L11.3 13.8L15 10" />
+                  </svg>
+                </div>
                 <p style={styles.cardLabel}>Admins</p>
                 <h2 style={styles.cardValue}>{adminUsers}</h2>
               </div>
@@ -613,9 +810,17 @@ function AdminDashboard() {
 
             <section style={styles.tableSection}>
               <div style={styles.tableHeader}>
-                <h2 style={styles.sectionTitle}>
-                  {isArchivedView ? "ARCHIVED USERS" : "USERS"}
-                </h2>
+                <div style={styles.tableTitleRow}>
+                  <h2 style={styles.sectionTitle}>
+                    {isArchivedView ? "Archived Users" : "Users"}
+                  </h2>
+
+                  {!loading && !error && (
+                    <span style={styles.tableCount}>
+                      {filteredUsers.length}/{users.length}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div style={styles.filtersRow}>
@@ -655,15 +860,7 @@ function AdminDashboard() {
                 </select>
               </div>
 
-              {!loading && !error && (
-                <p style={styles.resultsText}>
-                  Showing {filteredUsers.length} of {users.length}{" "}
-                  {isArchivedView ? "archived users" : "users"}
-                </p>
-              )}
-
               {loading && <p style={styles.infoText}>Loading users...</p>}
-
               {error && <p style={styles.errorText}>{error}</p>}
 
               {!loading && !error && (
@@ -779,81 +976,104 @@ function AdminDashboard() {
       {selectedProfile && (
         <div style={styles.modalOverlay}>
           <div style={styles.profileModal}>
-            <h2 style={styles.modalTitle}>Candidate Profile</h2>
-
-            <div style={styles.profileModalHeader}>
-              <div style={styles.profileAvatarLarge}>
-                {selectedProfile.username.charAt(0).toUpperCase()}
+            <div style={styles.profileModalScroll}>
+              <div style={styles.profileModalTop}>
+                <div>
+                  <h2 style={styles.profileModalTitle}>Candidate Profile</h2>
+                  <p style={styles.profileModalSubtitle}>
+                    Detailed candidate information and activity
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <h3 style={styles.profileModalName}>{selectedProfile.username}</h3>
-                <p style={styles.profileModalEmail}>{selectedProfile.email}</p>
+              <div style={styles.profileModalHeader}>
+                <div style={styles.profileAvatarLarge}>
+                  {selectedProfile.username.charAt(0).toUpperCase()}
+                </div>
+
+                <div>
+                  <h3 style={styles.profileModalName}>{selectedProfile.username}</h3>
+                  <p style={styles.profileModalEmail}>{selectedProfile.email}</p>
+                </div>
               </div>
-            </div>
 
-            <div style={styles.profileSection}>
-              <h3 style={styles.profileSectionTitle}>Selected Disabilities</h3>
+              <div style={styles.profileDetailsGrid}>
+                <div style={styles.profileSection}>
+                  <h3 style={styles.profileSectionTitle}>Selected Disabilities</h3>
 
-              {selectedProfile.selectedDisabilities.length > 0 ? (
-                <div>
-                  {selectedProfile.selectedDisabilities.map((disability) => (
-                    <span key={disability} style={styles.profileChip}>
-                      {disability}
-                    </span>
-                  ))}
+                  {selectedProfile.selectedDisabilities.length > 0 ? (
+                    <div style={styles.chipRow}>
+                      {selectedProfile.selectedDisabilities.map((disability) => (
+                        <span key={disability} style={styles.profileChip}>
+                          {disability}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={styles.profileEmptyText}>No disabilities selected yet.</p>
+                  )}
                 </div>
-              ) : (
-                <p style={styles.profileEmptyText}>No disabilities selected yet.</p>
-              )}
-            </div>
 
-            <div style={styles.profileSection}>
-              <h3 style={styles.profileSectionTitle}>Remaining Abilities</h3>
+                <div style={styles.profileSection}>
+                  <h3 style={styles.profileSectionTitle}>Remaining Abilities</h3>
 
-              {selectedProfile.remainingAbilities.length > 0 ? (
-                <div>
-                  {selectedProfile.remainingAbilities.map((ability) => (
-                    <span key={ability} style={styles.abilityChip}>
-                      {ability}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p style={styles.profileEmptyText}>
-                  Remaining abilities are pending analysis.
-                </p>
-              )}
-            </div>
-
-            <div style={styles.profileSection}>
-              <h3 style={styles.profileSectionTitle}>Applications</h3>
-
-              {selectedProfile.applications.length > 0 ? (
-                <div>
-                  {selectedProfile.applications.map((application, index) => (
-                    <p key={index} style={styles.profileEmptyText}>
-                      {application.jobTitle}
+                  {selectedProfile.remainingAbilities.length > 0 ? (
+                    <div style={styles.chipRow}>
+                      {selectedProfile.remainingAbilities.map((ability) => (
+                        <span key={ability} style={styles.abilityChip}>
+                          {ability}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={styles.profileEmptyText}>
+                      Remaining abilities are pending analysis.
                     </p>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <p style={styles.profileEmptyText}>
-                  No applications submitted yet.
-                </p>
+
+                <div style={styles.profileSection}>
+                  <h3 style={styles.profileSectionTitle}>Applications</h3>
+
+                  <p style={styles.profileEmptyText}>
+                    This user has applied to{" "}
+                    <strong>{selectedProfile.applications?.length || 0}</strong>{" "}
+                    application(s).
+                  </p>
+
+                  {(selectedProfile.applications?.length || 0) > 0 && (
+                    <button
+                      style={styles.viewApplicationsButton}
+                      onClick={() =>
+                        setShowProfileApplications((previousValue) => !previousValue)
+                      }
+                    >
+                      {showProfileApplications ? "Hide Applications" : "View Applications"}
+                    </button>
+                  )}
+                </div>
+
+                <div style={styles.profileSection}>
+                  <h3 style={styles.profileSectionTitle}>Last Updated</h3>
+                  <p style={styles.profileEmptyText}>
+                    {selectedProfile.updatedAt || "Not updated yet."}
+                  </p>
+                </div>
+              </div>
+
+              {showProfileApplications && (
+                <div style={styles.profileApplicationsBlock}>
+                  {renderApplicationsTable(selectedProfile.applications || [])}
+                </div>
               )}
             </div>
 
-            <div style={styles.profileSection}>
-              <h3 style={styles.profileSectionTitle}>Last Updated</h3>
-              <p style={styles.profileEmptyText}>
-                {selectedProfile.updatedAt || "Not updated yet."}
-              </p>
-            </div>
-
-            <div style={styles.modalActions}>
+            <div style={styles.profileModalFooter}>
               <button
-                onClick={() => setSelectedProfile(null)}
+                onClick={() => {
+                  setSelectedProfile(null);
+                  setShowProfileApplications(false);
+                }}
                 style={styles.confirmEditButton}
               >
                 Close
@@ -967,8 +1187,7 @@ function AdminDashboard() {
             <h2 style={styles.modalTitle}>Archive user?</h2>
 
             <p style={styles.modalText}>
-              You are about to archive{" "}
-              <strong>{userToArchive.username}</strong>.
+              You are about to archive <strong>{userToArchive.username}</strong>.
             </p>
 
             <p style={styles.archiveModalWarning}>
@@ -1039,25 +1258,34 @@ const styles = {
   page: {
     minHeight: "100vh",
     display: "flex",
-    background: "#f5f7fb",
+    background:
+      "linear-gradient(135deg, #eef4ff 0%, #f8fbff 40%, #edf2ff 100%)",
     color: "#1f2937",
     fontFamily: "Inter, system-ui, Arial, sans-serif",
+    overflowX: "hidden",
   },
 
   sidebar: {
-    width: "255px",
-    background: "#111827",
+    width: "240px",
+    minWidth: "240px",
+    background:
+      "linear-gradient(180deg, #121b31 0%, #081020 45%, #000000 100%)",
     color: "white",
-    padding: "28px 18px",
+    padding: "32px 20px",
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
+    borderRight: "1px solid rgba(255,255,255,0.05)",
+    boxShadow: "8px 0 30px rgba(15, 23, 42, 0.18)",
   },
 
   logo: {
-    fontSize: "23px",
-    marginBottom: "24px",
+    fontSize: "28px",
+    marginBottom: "38px",
     whiteSpace: "nowrap",
+    fontWeight: "800",
+    letterSpacing: "-0.8px",
+    color: "#ffffff",
   },
 
   nav: {
@@ -1068,30 +1296,27 @@ const styles = {
 
   navItem: {
     background: "transparent",
-    color: "#d1d5db",
+    color: "#cbd5e1",
     border: "none",
     textAlign: "left",
-    padding: "12px 12px",
-    borderRadius: "12px",
+    padding: "14px 18px",
+    borderRadius: "14px",
     cursor: "pointer",
     fontSize: "15px",
     fontWeight: "500",
-    whiteSpace: "nowrap",
     transition: "all 0.18s ease",
   },
 
   activeNavItem: {
-    background: "transparent",
+    background: "rgba(59, 130, 246, 0.12)",
     color: "#ffffff",
-    fontWeight: "800",
-    fontSize: "17px",
+    fontWeight: "700",
+    boxShadow: "inset 4px 0 0 #cdd2d9",
   },
 
   hoveredNavItem: {
-    background: "transparent",
+    background: "rgba(255,255,255,0.05)",
     color: "#ffffff",
-    fontWeight: "700",
-    fontSize: "16.5px",
   },
 
   logoutButton: {
@@ -1108,76 +1333,177 @@ const styles = {
   main: {
     flex: 1,
     padding: "36px",
+    maxWidth: "calc(100vw - 255px)",
+    boxSizing: "border-box",
+    overflowX: "hidden",
   },
 
   header: {
+    position: "relative",
     display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: "28px",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    marginBottom: "34px",
+  },
+
+  logoutTextButton: {
+    position: "absolute",
+    top: "8px",
+    right: "0",
+    border: "none",
+    background: "transparent",
+    color: "#dc2626",
+    fontSize: "15px",
+    fontWeight: "800",
+    cursor: "pointer",
+    padding: 0,
+  },
+
+  logoutButton: {
+    display: "none",
   },
 
   title: {
-    fontSize: "34px",
+    fontSize: "40px",
     margin: 0,
-    color: "#111827",
+    color: "#0f172a",
     fontWeight: "800",
-    letterSpacing: "0.5px",
-    textAlign: "center",
+    letterSpacing: "-1.5px",
+    textAlign: "left",
   },
 
+  subtitle: {
+    marginTop: "10px",
+    color: "#475569",
+    fontSize: "16px",
+    fontWeight: "500",
+    textAlign: "left",
+  },
+  
   cards: {
     display: "grid",
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "18px",
-    marginBottom: "28px",
+    gap: "22px",
+    marginBottom: "30px",
   },
 
   card: {
-    background: "white",
-    borderRadius: "18px",
-    padding: "22px",
-    boxShadow: "0 10px 25px rgba(15, 23, 42, 0.08)",
-    textAlign: "center",
+    background: "rgba(255,255,255,0.9)",
+    borderRadius: "20px",
+    padding: "14px 18px",
+    border: "1px solid rgba(226,232,240,0.9)",
+    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.06)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "5px",
+    height: "135px",
+    minHeight: "unset",
+  },
+  
+  cardIcon: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "15px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginBottom: "4px",
   },
 
   cardLabel: {
-    color: "#4b5563",
+    color: "#475569",
     margin: 0,
     fontSize: "15px",
     fontWeight: "700",
+    letterSpacing: "0.1px",
+    lineHeight: "1",
   },
 
   cardValue: {
-    margin: "10px 0 0",
-    fontSize: "32px",
-    color: "#1e3a8a",
-    fontWeight: "800",
+    margin: "4px 0 0",
+    fontSize: "34px",
+    color: "#0c2364",
+    fontWeight: "900",
+    letterSpacing: "-0.8px",
+    lineHeight: "1",
+  },
+
+  cardSvg: {
+    width: "24px",
+    height: "24px",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+
+  usersIcon: {
+    background: "#dccfe5",
+    color: "#9646e5",
+  },
+
+  verifiedIcon: {
+    background: "#dcfce7",
+    color: "#16a34a",
+  },
+
+  unverifiedIcon: {
+    background: "#fef3c7",
+    color: "#d97706",
+  },
+
+  adminIcon: {
+    background: "#dbeafe",
+    color: "#2563eb",
   },
 
   tableSection: {
-    background: "white",
-    borderRadius: "20px",
-    padding: "28px 24px 24px",
-    boxShadow: "0 10px 25px rgba(15, 23, 42, 0.08)",
+    background: "rgba(255,255,255,0.92)",
+    borderRadius: "28px",
+    padding: "30px 28px 26px",
+    boxShadow:
+      "0 14px 40px rgba(15, 23, 42, 0.08)",
+    width: "100%",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    border: "1px solid rgba(226,232,240,0.8)",
+    backdropFilter: "blur(12px)",
   },
 
   tableHeader: {
-    marginBottom: "22px",
-    textAlign: "center",
+    marginBottom: "20px",
+  },
+
+  tableTitleRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   sectionTitle: {
     margin: 0,
-    fontSize: "26px",
+    fontSize: "22px",
     color: "#111827",
     fontWeight: "800",
-    letterSpacing: "1px",
+    letterSpacing: "-0.3px",
+  },
+
+  tableCount: {
+    color: "#64748b",
+    fontSize: "14px",
+    fontWeight: "800",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "999px",
+    padding: "7px 12px",
   },
 
   filtersRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(360px, 1.9fr) 170px 210px",
+    gridTemplateColumns: "minmax(260px, 1fr) 170px 210px",
     gap: "12px",
     alignItems: "center",
     marginBottom: "12px",
@@ -1185,30 +1511,34 @@ const styles = {
 
   searchInput: {
     width: "100%",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    padding: "14px 16px",
+    borderRadius: "16px",
+    border: "1px solid #768db1",
     fontSize: "14px",
     outline: "none",
     boxSizing: "border-box",
+    background: "#f0f5fc",
+    color: "#0f172a",
   },
 
   profileSearchInput: {
     width: "100%",
-    padding: "13px 15px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    padding: "14px 16px",
+    borderRadius: "16px",
+    border: "1px solid #dbe3ef",
     fontSize: "14px",
     outline: "none",
     boxSizing: "border-box",
-    marginBottom: "22px",
+    marginBottom: "24px",
+    background: "#f8fbff",
+    color: "#0f172a",
   },
 
   filterSelect: {
     width: "100%",
     padding: "12px 14px",
     borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #b9c9e0",
     fontSize: "14px",
     background: "white",
     color: "#374151",
@@ -1226,6 +1556,7 @@ const styles = {
   },
 
   tableWrapper: {
+    width: "100%",
     overflowX: "auto",
   },
 
@@ -1234,14 +1565,44 @@ const styles = {
     borderCollapse: "collapse",
   },
 
+  applicationsTable: {
+    width: "100%",
+    tableLayout: "fixed",
+    borderCollapse: "collapse",
+  },
+
   th: {
     textAlign: "center",
-    padding: "18px 14px",
-    background: "#f9fafb",
-    color: "#374151",
+    padding: "15px 14px",
+    background: "#f8fafc",
+    color: "#475569",
     fontSize: "14px",
     fontWeight: "700",
     letterSpacing: "0.8px",
+    textTransform: "uppercase",
+    borderBottom: "1px solid #e5e7eb",
+  },
+
+  smallTh: {
+    width: "44px",
+    textAlign: "center",
+    padding: "16px 8px",
+    background: "#f9fafb",
+    color: "#374151",
+    fontSize: "13px",
+    fontWeight: "800",
+    textTransform: "uppercase",
+    borderBottom: "1px solid #e5e7eb",
+  },
+
+  applicationTh: {
+    textAlign: "center",
+    padding: "16px 8px",
+    background: "#f9fafb",
+    color: "#374151",
+    fontSize: "13px",
+    fontWeight: "800",
+    letterSpacing: "0.3px",
     textTransform: "uppercase",
     borderBottom: "1px solid #e5e7eb",
   },
@@ -1261,10 +1622,29 @@ const styles = {
   },
 
   td: {
-    padding: "16px 14px",
+    padding: "13px 14px",
     borderBottom: "1px solid #e5e7eb",
     fontSize: "14px",
     verticalAlign: "middle",
+    textAlign: "center",
+  },
+
+  smallTd: {
+    width: "44px",
+    padding: "14px 8px",
+    borderBottom: "1px solid #e5e7eb",
+    fontSize: "13px",
+    verticalAlign: "middle",
+    textAlign: "center",
+  },
+
+  applicationTd: {
+    padding: "14px 8px",
+    borderBottom: "1px solid #e5e7eb",
+    fontSize: "13px",
+    verticalAlign: "middle",
+    textAlign: "center",
+    wordBreak: "break-word",
   },
 
   actionsTd: {
@@ -1288,7 +1668,8 @@ const styles = {
     padding: "6px 10px",
     borderRadius: "999px",
     fontWeight: "600",
-    fontSize: "13px",
+    fontSize: "12px",
+    whiteSpace: "nowrap",
   },
 
   statusBadge: {
@@ -1319,25 +1700,25 @@ const styles = {
   actionButton: {
     border: "none",
     background: "#eff6ff",
-    color: "#1d4ed8",
-    padding: "7px 12px",
+    color: "#2563eb",
+    padding: "8px 14px",
     borderRadius: "999px",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "13px",
-    minWidth: "74px",
+    minWidth: "82px",
   },
 
   archiveButton: {
     border: "none",
     background: "#f3f4f6",
     color: "#374151",
-    padding: "7px 12px",
+    padding: "8px 14px",
     borderRadius: "999px",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "13px",
-    minWidth: "74px",
+    minWidth: "82px",
   },
 
   restoreButton: {
@@ -1355,13 +1736,63 @@ const styles = {
   deleteButton: {
     border: "none",
     background: "#fee2e2",
-    color: "#b91c1c",
-    padding: "7px 12px",
+    color: "#dc2626",
+    padding: "8px 14px",
     borderRadius: "999px",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "13px",
-    minWidth: "74px",
+    minWidth: "82px",
+  },
+
+  fileActions: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+    alignItems: "center",
+  },
+
+  fileName: {
+    fontSize: "12px",
+    color: "#4b5563",
+    fontWeight: "600",
+    maxWidth: "115px",
+    wordBreak: "break-word",
+    textAlign: "center",
+    lineHeight: "1.25",
+  },
+
+  fileButtons: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px",
+    justifyContent: "center",
+  },
+
+  viewFileButton: {
+    textDecoration: "none",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "6px 9px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+
+  downloadFileButton: {
+    textDecoration: "none",
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "6px 9px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+
+  noFileText: {
+    color: "#9ca3af",
+    fontSize: "13px",
+    fontWeight: "600",
   },
 
   profileGrid: {
@@ -1371,21 +1802,21 @@ const styles = {
   },
 
   profileCard: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#ffffff",
+    border: "1px solid #dbe3ef",
     borderRadius: "18px",
-    padding: "22px",
+    padding: "24px",
     textAlign: "center",
-    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.055)",
   },
 
   profileAvatar: {
-    width: "54px",
-    height: "54px",
-    borderRadius: "50%",
-    background: "#1d4ed8",
+    width: "56px",
+    height: "56px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #4d6ebd, #092069)",
     color: "white",
-    margin: "0 auto 12px",
+    margin: "0 auto 14px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1415,18 +1846,18 @@ const styles = {
   },
 
   profileStat: {
-    background: "white",
-    color: "#374151",
-    border: "1px solid #e5e7eb",
-    borderRadius: "999px",
-    padding: "7px 10px",
+    background: "#f8fafc",
+    color: "#334155",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    padding: "9px 12px",
     fontSize: "13px",
     fontWeight: "700",
   },
 
   viewProfileButton: {
     border: "none",
-    background: "#1d4ed8",
+    background: "#3a62d2",
     color: "white",
     padding: "10px 14px",
     borderRadius: "12px",
@@ -1457,25 +1888,67 @@ const styles = {
 
   profileModal: {
     width: "100%",
-    maxWidth: "680px",
-    maxHeight: "88vh",
+    maxWidth: "900px",
+    height: "88vh",
+    background: "#ffffff",
+    borderRadius: "8px",
+    padding: "0",
+    boxShadow: "0 28px 70px rgba(15, 23, 42, 0.28)",
+    border: "1px solid #e2e8f0",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  profileModalScroll: {
+    flex: 1,
     overflowY: "auto",
-    background: "white",
-    borderRadius: "20px",
-    padding: "30px",
-    boxShadow: "0 25px 50px rgba(15, 23, 42, 0.25)",
+    padding: "28px",
+    scrollbarWidth: "thin",
+    scrollbarColor: "#cbd5e1 transparent",
+  },
+
+  profileModalFooter: {
+    borderTop: "1px solid #e2e8f0",
+    background: "#ffffff",
+    padding: "14px 28px",
+    display: "flex",
+    justifyContent: "center",
+  },
+
+  profileModalTop: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "20px",
+  },
+
+  profileModalTitle: {
+    margin: 0,
+    color: "#0f172a",
+    fontSize: "28px",
+    fontWeight: "900",
+    letterSpacing: "-0.8px",
   },
 
   profileModalHeader: {
     display: "flex",
     alignItems: "center",
     gap: "16px",
-    background: "#f9fafb",
-    borderRadius: "16px",
+    background: "linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%)",
+    border: "1px solid #dbeafe",
+    borderRadius: "6px",
     padding: "18px",
-    marginTop: "18px",
-    marginBottom: "20px",
+    marginBottom: "18px",
   },
+
+  profileModalSubtitle: {
+    margin: "6px 0 0",
+    color: "#64748b",
+    fontSize: "14px",
+    fontWeight: "500",
+  },
+
 
   profileAvatarLarge: {
     width: "64px",
@@ -1503,17 +1976,54 @@ const styles = {
     fontSize: "14px",
   },
 
+  profileDetailsGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "16px",
+    marginTop: "18px",
+  },
+
   profileSection: {
-    borderTop: "1px solid #e5e7eb",
-    paddingTop: "16px",
-    marginTop: "16px",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "6px",
+    padding: "16px 18px",
+    textAlign: "left",
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.035)",
+    minHeight: "120px",
   },
 
   profileSectionTitle: {
     margin: "0 0 12px",
-    color: "#111827",
-    fontSize: "16px",
+    color: "#0f172a",
+    fontSize: "15px",
     fontWeight: "800",
+  },
+
+  chipRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+
+  viewApplicationsButton: {
+    marginTop: "16px",
+    border: "none",
+    background: "#2563eb",
+    color: "white",
+    padding: "10px 16px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "800",
+    fontSize: "14px",
+  },
+
+  profileApplicationsBlock: {
+    marginTop: "18px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "6px",
+    padding: "16px",
+    background: "#ffffff",
   },
 
   profileChip: {

@@ -8,6 +8,23 @@ import {
 } from "../services/authService";
 import "../styles/authPages.css";
 
+function EyeIcon({ hidden }) {
+  return hidden ? (
+    <svg className="eye-icon" viewBox="0 0 24 24" fill="none">
+      <path d="M4 4L20 20" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M9.8 9.8A3 3 0 0 0 14.2 14.2" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M10.7 5.2C11.1 5.1 11.6 5.1 12 5.1C17.1 5.1 20.7 9.1 22 12C21.6 13 20.8 14.2 19.7 15.3" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.3 6.7C4.3 8 2.9 10 2 12C3.3 14.9 6.9 18.9 12 18.9C13.4 18.9 14.7 18.6 15.9 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ) : (
+    <svg className="eye-icon" viewBox="0 0 24 24" fill="none">
+      <path d="M2 12C3.3 9.1 6.9 5.1 12 5.1C17.1 5.1 20.7 9.1 22 12C20.7 14.9 17.1 18.9 12 18.9C6.9 18.9 3.3 14.9 2 12Z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.9" />
+      <circle cx="12" cy="12" r="1.15" fill="currentColor" />
+    </svg>
+  );
+}
+
 function SignInPage() {
   const navigate = useNavigate();
 
@@ -69,7 +86,9 @@ function SignInPage() {
       <div className="auth-shell">
         <div className="auth-left">
           <span className="auth-badge">Welcome Back</span>
+
           <h1 className="auth-title">Sign In</h1>
+
           <p className="auth-subtitle">
             Access your account and continue your journey with John Hospitality.
           </p>
@@ -108,7 +127,7 @@ function SignInPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  <EyeIcon hidden={showPassword} />
                 </button>
               </div>
 
@@ -142,11 +161,7 @@ function SignInPage() {
         <div className="auth-right">
           <div className="logo-panel">
             <div className="logo-glow"></div>
-            <img
-              src={logoImage}
-              alt="John Hospitality logo"
-              className="logo-image"
-            />
+            <img src={logoImage} alt="John Hospitality logo" className="logo-image" />
           </div>
         </div>
       </div>

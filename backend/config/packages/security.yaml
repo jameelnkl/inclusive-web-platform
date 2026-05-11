@@ -53,9 +53,20 @@ security:
         - { path: ^/api/reset-password, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs\., roles: PUBLIC_ACCESS }
+
         - { path: ^/api/admin/users, roles: PUBLIC_ACCESS }
         - { path: ^/api/admin/candidate-profiles, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/applications, roles: PUBLIC_ACCESS }
+
         - { path: ^/api/candidate/profile, roles: PUBLIC_ACCESS }
+        - { path: ^/api/candidate/jobs, roles: PUBLIC_ACCESS }
+        - { path: ^/api/candidate/applications, roles: PUBLIC_ACCESS }
+
+        - { path: ^/api/employer/profile, roles: PUBLIC_ACCESS }
+        - { path: ^/api/employer/jobs, roles: PUBLIC_ACCESS }
+        - { path: ^/api/employer/applications, roles: PUBLIC_ACCESS }
+
+        - { path: ^/api/jobs, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

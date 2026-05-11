@@ -25,6 +25,9 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
     Require all granted\n\
 </Directory>\n' > /etc/apache2/conf-available/app.conf \
     && a2enconf app \
-    && composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+    && composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    && mkdir -p /app/public/uploads/applications \
+    && chown -R www-data:www-data /app/public/uploads \
+    && chmod -R 775 /app/public/uploads
 
 CMD ["sh", "-c", "php bin/console cache:clear --env=prod && php bin/console doctrine:migrations:migrate --no-interaction && apache2-foreground"]
