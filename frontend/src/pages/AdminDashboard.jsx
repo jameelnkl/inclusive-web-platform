@@ -379,7 +379,7 @@ function AdminDashboard() {
         {/* HEADER */}
         <div style={{ marginBottom: "28px" }}>
           <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-            {navItems.find((n) => n.tab === activeTab)?.label}
+            Management
           </p>
           <h1 style={{ margin: 0, fontSize: "26px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.4px" }}>
             {isArchivedView ? "Archived Users" : isUserProfilesView ? "User Profiles" : isApplicationsView ? "Applications" : "Users"}
@@ -391,11 +391,11 @@ function AdminDashboard() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
             {statsCards.map((card) => (
               <div key={card.label} className="card-stat" style={{ background: "#ffffff", borderRadius: "16px", padding: "20px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)", transition: "all 0.2s ease", cursor: "default" }}>
-                <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
+                <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px", margin: "0 auto 14px" }}>
                   {card.icon}
                 </div>
-                <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8" }}>{card.label}</p>
-                <p style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.5px" }}>{card.value}</p>
+                <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8", textAlign: "center" }}>{card.label}</p>
+                <p style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.5px", textAlign: "center" }}>{card.value}</p>
               </div>
             ))}
           </div>
