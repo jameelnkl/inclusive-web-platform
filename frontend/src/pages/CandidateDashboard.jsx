@@ -198,7 +198,6 @@ function CandidateDashboard() {
   const [activeTab, setActiveTab] = useState("PROFILE");
   const [candidateName, setCandidateName] = useState("Candidate");
   const [selectedDisabilities, setSelectedDisabilities] = useState([]);
-  const [remainingAbilities, setRemainingAbilities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -300,7 +299,6 @@ function CandidateDashboard() {
           "Candidate"
       );
       setSelectedDisabilities(profile.selectedDisabilities || []);
-      setRemainingAbilities(profile.remainingAbilities || []);
     } catch (err) {
       setErrorMessage(err.message || "Something went wrong while loading profile.");
     } finally {
@@ -436,12 +434,10 @@ function CandidateDashboard() {
       setAiLoading(true);
       setAiError("");
       setAiResults(null);
-      const token = getToken();
-      const response = await fetch(`${API_BASE_URL}/candidate/ai-match`, {
+      const response = await fetch(`https://fyp-ai-service-tiyi.onrender.com/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Auth-Token": token,
         },
         body: JSON.stringify({ disabilities: selectedDisabilities }),
       });
@@ -480,7 +476,6 @@ function CandidateDashboard() {
         throw new Error(data.message || "Failed to save profile.");
       }
       setSelectedDisabilities(data.profile?.selectedDisabilities || []);
-      setRemainingAbilities(data.profile?.remainingAbilities || []);
       setSuccessMessage(data.message || "Profile saved successfully.");
     } catch (err) {
       setErrorMessage(err.message || "Something went wrong while saving profile.");
