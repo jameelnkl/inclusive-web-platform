@@ -66,7 +66,7 @@ function AdminDashboard() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("USERS");
-  const [hoveredTab, setHoveredTab] = useState(null);
+  const [_hoveredTab, setHoveredTab] = useState(null);
   const [users, setUsers] = useState([]);
   const [candidateProfiles, setCandidateProfiles] = useState([]);
   const [adminApplications, setAdminApplications] = useState([]);
