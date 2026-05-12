@@ -236,6 +236,64 @@ function JobResultCard({ result, index }) {
   );
 }
 
+function TaskCard({ task, index, feasibility, borderColor, abilities, getFeasibilityBadgeStyle }) {
+  const [showAll, setShowAll] = useState(false);
+  const visibleAbilities = showAll ? abilities : abilities.slice(0, 3);
+  const hiddenCount = abilities.length - 3;
+
+  return (
+    <div style={{ ...taskCardStyle, borderLeft: `3px solid ${borderColor}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#0f172a", textAlign: "left" }}>
+            {index + 1}. {task.taskName}
+          </p>
+          {task.description && (
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#94a3b8", lineHeight: "1.5", fontWeight: "400", textAlign: "left" }}>
+              {task.description}
+            </p>
+          )}
+        </div>
+        <span style={{ ...getFeasibilityBadgeStyle(feasibility.status), flexShrink: 0, fontSize: "11px" }}>
+          {feasibility.status === "not_calculated"
+            ? "Select disabilities to see"
+            : feasibility.status === "not_feasible"
+            ? feasibility.label
+            : `${feasibility.label} · ${feasibility.score}%`}
+        </span>
+      </div>
+
+      {abilities.length > 0 && (
+        <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+          {visibleAbilities.map((ab) => (
+            <span key={ab} style={{ background: "#f1f5f9", color: "#475569", padding: "3px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "400" }}>
+              {ab}
+            </span>
+          ))}
+          {hiddenCount > 0 && !showAll && (
+            <button onClick={() => setShowAll(true)} style={{ background: "none", border: "1px solid #e2e8f0", color: "#94a3b8", padding: "3px 8px", borderRadius: "999px", fontSize: "11px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+              +{hiddenCount} more
+            </button>
+          )}
+          {showAll && hiddenCount > 0 && (
+            <button onClick={() => setShowAll(false)} style={{ background: "none", border: "1px solid #e2e8f0", color: "#94a3b8", padding: "3px 8px", borderRadius: "999px", fontSize: "11px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+              Show less
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const taskCardStyle = {
+  background: "#fafbfc",
+  border: "1px solid #e8edf5",
+  borderRadius: "12px",
+  padding: "12px 14px",
+  transition: "border-left-color 0.3s ease",
+};
+
 function getCompanyInitial(n) { return n ? n.charAt(0).toUpperCase() : "J"; }
 function getCompanyLogoUrl(item) {
   const url = item?.companyLogoUrl || item?.employerProfile?.logoUrl || item?.logoUrl || "";
@@ -328,15 +386,27 @@ function CandidateDashboard() {
   }
 
   function getTaskRequiredAbilities(task) {
-    if (Array.isArray(task.requiredAbilities) && task.requiredAbilities.length > 0) return task.requiredAbilities.map((i) => String(i).trim()).filter(Boolean);
-    if (typeof task.requiredAbilities === "string" && task.requiredAbilities.trim()) return task.requiredAbilities.split(/,|\n|-/).map((i) => i.trim()).filter(Boolean);
+    // If requiredAbilities is a clean array
+    if (Array.isArray(task.requiredAbilities) && task.requiredAbilities.length > 0) {
+      return task.requiredAbilities.map((i) => String(i).trim()).filter(Boolean);
+    }
+    // If requiredAbilities is a string (possibly with dashes)
+    if (typeof task.requiredAbilities === "string" && task.requiredAbilities.trim()) {
+      return task.requiredAbilities
+        .split(/\s*-\s*|,|\n/)
+        .map((i) => i.trim())
+        .filter((i) => i.length > 2);
+    }
+    // Infer from task name and description
     const text = `${task.taskName || ""} ${task.description || ""}`.toLowerCase();
     const inf = [];
-    if (text.includes("customer") || text.includes("sale") || text.includes("payment")) inf.push("Can communicate with customers", "Can count", "Can handle money");
+    if (text.includes("stock") || text.includes("inventory") || text.includes("check")) inf.push("Can read", "Can count", "Can handle lightweight materials");
+    if (text.includes("customer") || text.includes("sale") || text.includes("payment") || text.includes("service")) inf.push("Can communicate with customers", "Can count", "Can handle money");
     if (text.includes("package") || text.includes("label") || text.includes("wrap")) inf.push("Can package finished products", "Can handle lightweight materials", "Can use one hand");
     if (text.includes("clean") || text.includes("hygiene") || text.includes("sanitize")) inf.push("Can follow hygiene rules", "Can perform light cleaning tasks", "Can use one hand");
-    if (text.includes("chocolate") || text.includes("mold") || text.includes("coat") || text.includes("prepare") || text.includes("mix")) inf.push("Can use one hand", "Can perform repetitive hand movements", "Can handle lightweight materials", "Can work seated");
+    if (text.includes("chocolate") || text.includes("mold") || text.includes("coat") || text.includes("prepare") || text.includes("mix") || text.includes("ingredient")) inf.push("Can use one hand", "Can perform repetitive hand movements", "Can handle lightweight materials", "Can work seated", "Can follow instructions");
     if (text.includes("display") || text.includes("arrange")) inf.push("Can read", "Can handle lightweight materials", "Can move around while seated");
+    if (text.includes("coat") || text.includes("decoration") || text.includes("finish")) inf.push("Can use one hand", "Can perform precise hand movements", "Can work seated");
     return [...new Set(inf)];
   }
 
@@ -621,37 +691,66 @@ function CandidateDashboard() {
             ) : (
               <>
                 <button style={styles.backButton} onClick={() => setSelectedJob(null)}>← Back</button>
+
+                {/* Job Header */}
                 <div style={styles.jobDetailsHeader}>
                   <CompanyLogo item={selectedJob} size="large" />
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h2 style={styles.jobDetailsTitle}>{selectedJob.title}</h2>
                     <button type="button" style={styles.companyNameLink} onClick={() => openCompanyProfile(selectedJob)}>{selectedJob.companyName}</button>
-                    <p style={styles.jobMeta}>{selectedJob.location} · {selectedJob.jobType} · {selectedJob.workMode}</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+                      {[selectedJob.location, selectedJob.jobType, selectedJob.workMode].filter(Boolean).map((meta) => (
+                        <span key={meta} style={{ background: "#f1f5f9", color: "#475569", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "400" }}>
+                          {meta}
+                        </span>
+                      ))}
+                    </div>
                   </div>
+                  {selectedJob.applicationDeadline && (
+                    <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "12px", padding: "12px 16px", textAlign: "center", flexShrink: 0 }}>
+                      <p style={{ margin: 0, fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: "500" }}>Deadline</p>
+                      <p style={{ margin: "4px 0 0", fontSize: "14px", fontWeight: "600", color: "#1d4ed8" }}>{selectedJob.applicationDeadline}</p>
+                    </div>
+                  )}
                 </div>
-                <div style={styles.detailsGrid}>
-                  <div style={styles.detailBox}><strong>Application deadline</strong><span>{selectedJob.applicationDeadline || "Not specified"}</span></div>
-                </div>
-                <h3 style={styles.detailsSectionTitle}>Job Description</h3>
-                <p style={styles.detailsText}>{selectedJob.description}</p>
-                {selectedJob.requirements && (<><h3 style={styles.detailsSectionTitle}>Requirements</h3><p style={styles.detailsText}>{selectedJob.requirements}</p></>)}
+
+                {/* Description */}
+                {selectedJob.description && (
+                  <>
+                    <h3 style={styles.detailsSectionTitle}>Job Description</h3>
+                    <p style={styles.detailsText}>{selectedJob.description}</p>
+                  </>
+                )}
+
+                {/* Requirements as chips */}
+                {selectedJob.requirements && (
+                  <>
+                    <h3 style={styles.detailsSectionTitle}>Requirements</h3>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "4px" }}>
+                      {selectedJob.requirements.split(/[-,\n]/).map((r) => r.trim()).filter(Boolean).map((req) => (
+                        <span key={req} style={{ background: "#f0f9ff", color: "#0284c7", border: "1px solid #bae6fd", padding: "5px 11px", borderRadius: "999px", fontSize: "12px", fontWeight: "400" }}>
+                          {req}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <h3 style={styles.detailsSectionTitle}>Tasks</h3>
                 <div style={styles.taskList}>
                   {(selectedJob.tasks || []).map((task, index) => {
                     const f = calculateTaskFeasibility(task);
+                    const abilities = getTaskRequiredAbilities(task);
+                    const borderColor = f.status === "feasible" ? "#22c55e" : f.status === "assistance" ? "#f59e0b" : f.status === "not_feasible" ? "#ef4444" : "#e2e8f0";
                     return (
-                      <div key={task.id || index} style={styles.taskItem}>
-                        <div style={styles.taskHeader}>
-                          <strong style={{ fontSize: "14px" }}>{index + 1}. {task.taskName}</strong>
-                          <span style={getFeasibilityBadgeStyle(f.status)}>{f.status === "not_feasible" ? f.label : `${f.label} · ${f.score}%`}</span>
-                        </div>
-                        {task.description && <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#64748b" }}>{task.description}</p>}
-                        {getTaskRequiredAbilities(task).length > 0 && (
-                          <div style={styles.abilityChips}>
-                            {getTaskRequiredAbilities(task).map((ab) => (<span key={ab} style={styles.abilityChip}>{ab}</span>))}
-                          </div>
-                        )}
-                      </div>
+                      <TaskCard
+                        key={task.id || index}
+                        task={task}
+                        index={index}
+                        feasibility={f}
+                        borderColor={borderColor}
+                        abilities={abilities}
+                        getFeasibilityBadgeStyle={getFeasibilityBadgeStyle}
+                      />
                     );
                   })}
                 </div>
@@ -850,14 +949,14 @@ const styles = {
   emptyBox: { marginTop: "14px", border: "1.5px dashed #e2e8f0", borderRadius: "12px", padding: "24px", textAlign: "center", color: "#94a3b8", fontWeight: "400", fontSize: "13px" },
   backButton: { border: "none", background: "#f1f5f9", color: "#475569", padding: "7px 13px", borderRadius: "8px", cursor: "pointer", fontWeight: "400", marginBottom: "18px", fontSize: "13px", fontFamily: "Inter, sans-serif" },
   jobDetailsHeader: { display: "flex", alignItems: "center", gap: "14px", marginBottom: "18px" },
-  companyLogoLarge: { width: "62px", height: "62px", borderRadius: "14px", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "600", fontSize: "24px", flexShrink: 0, overflow: "hidden" },
-  companyLogoLargeImage: { width: "100%", height: "100%", objectFit: "cover" },
+  companyLogoLarge: { width: "68px", height: "68px", borderRadius: "14px", background: "#ffffff", border: "1px solid #e8edf5", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "600", fontSize: "24px", flexShrink: 0, overflow: "hidden", padding: "4px", boxSizing: "border-box" },
+  companyLogoLargeImage: { width: "100%", height: "100%", objectFit: "contain" },
   jobDetailsTitle: { margin: "0 0 3px", color: "#0f172a", fontSize: "22px", fontWeight: "700" },
   jobMeta: { margin: "5px 0 0", color: "#64748b", fontWeight: "400", fontSize: "13px" },
   detailsGrid: { display: "grid", gridTemplateColumns: "repeat(1, minmax(0, 1fr))", gap: "10px", marginBottom: "20px", maxWidth: "260px" },
   detailBox: { background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "10px", padding: "12px", display: "flex", flexDirection: "column", gap: "5px", color: "#374151", fontSize: "13px" },
-  detailsSectionTitle: { margin: "18px 0 7px", color: "#0f172a", fontSize: "15px", fontWeight: "600" },
-  detailsText: { color: "#64748b", lineHeight: "1.65", margin: 0, fontSize: "13px" },
+  detailsSectionTitle: { margin: "18px 0 7px", color: "#0f172a", fontSize: "15px", fontWeight: "600", textAlign: "left" },
+  detailsText: { color: "#64748b", lineHeight: "1.65", margin: 0, fontSize: "13px", textAlign: "left" },
   taskList: { display: "flex", flexDirection: "column", gap: "8px" },
   taskItem: { background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "12px", padding: "12px" },
   taskHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" },
