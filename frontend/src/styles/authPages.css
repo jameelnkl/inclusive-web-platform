@@ -779,3 +779,285 @@
 .reset-success-note button:hover {
   text-decoration: underline;
 }
+
+/* ── BUTTON REFINEMENT ── */
+.primary-btn,
+.secondary-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 13px 32px;
+  font-size: 15px;          /* was 18px — too heavy */
+  font-weight: 500;          /* was 650 — too bold */
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  min-width: 160px;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #1a56c4 0%, #0b63ce 100%);
+  color: white;
+  box-shadow: 0 10px 28px rgba(15, 79, 168, 0.22);
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 32px rgba(15, 79, 168, 0.32);
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.72);
+  color: #1a4fa0;
+  border: 1px solid rgba(180, 200, 235, 0.75);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.secondary-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: white;
+  border-color: #b0c4e8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+}
+
+/* ── HEADING REFINEMENT ── */
+.auth-heading {
+  font-size: clamp(2rem, 3.4vw, 2.9rem);
+  font-weight: 300;           /* ultra-light base */
+  letter-spacing: -1.8px;
+  line-height: 1.1;
+  color: #1a2540;
+}
+
+.auth-heading span {
+  font-weight: 700;           /* contrast: bold brand word, light rest */
+  color: #1d55d4;
+}
+
+/* ── BADGE REFINEMENT ── */
+.auth-badge {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  padding: 6px 14px;
+  background: rgba(31, 79, 191, 0.06);
+  border: 1px solid rgba(31, 79, 191, 0.12);
+  color: #2554c7;
+}
+
+/* ── STAT CARDS REFINEMENT ── */
+.welcome-stat-card strong {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+}
+
+.welcome-stat-card span {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  color: #7a85a0;
+}
+
+/* ── BODY TEXT ── */
+.auth-text {
+  font-size: 14.5px;
+  color: #6a748f;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+/* ── PREMIUM FONT ── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+.auth-page,
+.auth-heading,
+.auth-text,
+.auth-badge,
+.primary-btn,
+.secondary-btn,
+.welcome-stat-card strong,
+.welcome-stat-card span {
+  font-family: 'DM Sans', sans-serif;
+}
+
+.auth-heading {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 3.4vw, 2.85rem);
+  letter-spacing: -0.5px;
+  line-height: 1.12;
+  color: #1a2540;
+}
+
+.auth-heading span {
+  font-style: italic;
+  font-weight: 400;
+  color: #1d55d4;
+}
+
+/* ── BADGE I ── */
+.badge-i {
+  font-weight: 800;
+  color: #1d55d4;
+  font-style: italic;
+}
+
+/* ── BUTTON REFINEMENT ── */
+.primary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 13px 32px;
+  letter-spacing: 0.3px;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-arrow {
+  display: inline-block;
+  transform: translateX(-4px);
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  font-size: 16px;
+}
+
+.primary-btn:hover .btn-arrow {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 32px rgba(15, 79, 168, 0.32);
+  padding-right: 26px;
+}
+
+.secondary-btn {
+  font-size: 15px;
+  font-weight: 500;
+  padding: 13px 32px;
+  letter-spacing: 0.3px;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(8px);
+}
+
+.secondary-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: white;
+  border-color: #b0c4e8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+}
+
+/* ── STAT CARD SHIMMER ── */
+.welcome-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 80%
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.welcome-stat-card:hover::after {
+  left: 160%;
+}
+
+.welcome-stat-card strong {
+  font-family: 'DM Serif Display', serif;
+  font-size: 19px;
+  font-weight: 400;
+  font-style: italic;
+  color: #1a4db8;
+  letter-spacing: -0.2px;
+}
+
+.welcome-stat-card span {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.9px;
+  color: #7a85a0;
+  text-transform: uppercase;
+}
+
+/* ── LOGO PANEL ORBS ── */
+.logo-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  z-index: 0;
+  animation: orbFloat 6s ease-in-out infinite;
+}
+
+.logo-orb-1 {
+  width: 180px;
+  height: 180px;
+  background: rgba(99, 150, 255, 0.28);
+  top: 10%;
+  left: 10%;
+  animation-duration: 7s;
+}
+
+.logo-orb-2 {
+  width: 140px;
+  height: 140px;
+  background: rgba(160, 100, 255, 0.18);
+  bottom: 12%;
+  right: 8%;
+  animation-duration: 9s;
+  animation-delay: -3s;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(12px, -16px) scale(1.06); }
+  66%       { transform: translate(-10px, 10px) scale(0.95); }
+}
+
+/* ── BADGE ANIMATED UNDERLINE ── */
+.auth-badge {
+  position: relative;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  padding: 6px 14px;
+  background: rgba(31, 79, 191, 0.06);
+  border: 1px solid rgba(31, 79, 191, 0.12);
+  color: #2554c7;
+  overflow: hidden;
+}
+
+.auth-badge::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 14px;
+  right: 14px;
+  height: 1.5px;
+  background: linear-gradient(90deg, #2563eb, #7aa3f5, #2563eb);
+  background-size: 200% 100%;
+  animation: badgeLine 2.5s linear infinite;
+  border-radius: 999px;
+  opacity: 0.6;
+}
+
+@keyframes badgeLine {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}

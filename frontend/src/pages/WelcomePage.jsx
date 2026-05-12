@@ -9,7 +9,9 @@ function WelcomePage() {
     <div className="auth-page">
       <div className="auth-shell auth-shell--welcome">
         <div className="auth-left auth-left--welcome">
-          <span className="auth-badge">Join Hospitality</span>
+          <span className="auth-badge">
+            Jo<span className="badge-i">I</span>n Hospitality
+          </span>
 
           <h1 className="auth-heading">
             <span>Inclusive Hospitality</span> starts with the right opportunity.
@@ -59,7 +61,8 @@ function WelcomePage() {
 
           <div className="welcome-actions">
             <button className="primary-btn" onClick={() => navigate("/signup")}>
-              Create Account
+              <span>Create Account</span>
+              <span className="btn-arrow">→</span>
             </button>
 
             <button className="secondary-btn" onClick={() => navigate("/signin")}>
@@ -70,8 +73,10 @@ function WelcomePage() {
 
         <div className="auth-right">
           <div className="logo-panel">
+            <div className="logo-orb logo-orb-1"></div>
+            <div className="logo-orb logo-orb-2"></div>
             <div className="logo-glow"></div>
-            <img src={logoImage} alt="John Hospitality logo" className="logo-image" />
+            <img src={logoImage} alt="JoIn Hospitality logo" className="logo-image" />
           </div>
         </div>
       </div>
