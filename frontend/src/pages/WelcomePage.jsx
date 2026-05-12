@@ -9,9 +9,10 @@ function WelcomePage() {
     <div className="auth-page">
       <div className="auth-shell auth-shell--welcome">
         <div className="auth-left auth-left--welcome">
-          <span className="auth-badge">
-            Jo<span className="badge-i">I</span>n Hospitality
-          </span>
+          {/* <span className="auth-badge"> */}
+          <span className="auth-badge">JoIn Hospitality</span>
+            {/* Jo<span className="badge-i">I</span>n Hospitality */}
+          {/* </span> */}
 
           <h1 className="auth-heading">
             <span>Inclusive Hospitality</span> starts with the right opportunity.
