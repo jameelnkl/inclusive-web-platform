@@ -727,7 +727,7 @@ function CandidateDashboard() {
                   <>
                     <h3 style={styles.detailsSectionTitle}>Requirements</h3>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "4px" }}>
-                      {selectedJob.requirements.split(/[-,\n]/).map((r) => r.trim()).filter(Boolean).map((req) => (
+                      {selectedJob.requirements.split(/\s*-\s*|,|\n/).map((r) => r.trim()).filter((r) => r.length > 2).map((req) => (
                         <span key={req} style={{ background: "#f0f9ff", color: "#0284c7", border: "1px solid #bae6fd", padding: "5px 11px", borderRadius: "999px", fontSize: "12px", fontWeight: "400" }}>
                           {req}
                         </span>
