@@ -7,40 +7,84 @@ import {
   getAdminApplicationFileUrl,
 } from "../services/authService";
 
+const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+  .nav-btn:hover { background: rgba(255,255,255,0.07) !important; color: #ffffff !important; }
+  .action-btn:hover { filter: brightness(0.93); }
+  .card-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.1) !important; }
+  .row-hover:hover { background: #f8fafc !important; }
+`;
+
+function UsersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function ArchiveIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="21 8 21 21 3 21 3 8" />
+      <rect x="1" y="3" width="22" height="5" />
+      <line x1="10" y1="12" x2="14" y2="12" />
+    </svg>
+  );
+}
+
+function ApplicationsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+function ProfilesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 function AdminDashboard() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("USERS");
   const [hoveredTab, setHoveredTab] = useState(null);
-
   const [users, setUsers] = useState([]);
   const [candidateProfiles, setCandidateProfiles] = useState([]);
   const [adminApplications, setAdminApplications] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showProfileApplications, setShowProfileApplications] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [verificationFilter, setVerificationFilter] = useState("");
-
   const [userToEdit, setUserToEdit] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-  });
+  const [editFormData, setEditFormData] = useState({ username: "", email: "", password: "" });
   const [editingUser, setEditingUser] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false);
-
   const [userToArchive, setUserToArchive] = useState(null);
   const [archivingUser, setArchivingUser] = useState(false);
-
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
-
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const isArchivedView = activeTab === "ARCHIVED_USERS";
@@ -49,355 +93,116 @@ function AdminDashboard() {
 
   async function fetchUsers(tab = activeTab) {
     try {
-      setLoading(true);
-      setError("");
-
+      setLoading(true); setError("");
       const token = getToken();
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-
-      const endpoint =
-        tab === "ARCHIVED_USERS"
-          ? "https://fyp-backend-cbaa.onrender.com/api/admin/users/archived"
-          : "https://fyp-backend-cbaa.onrender.com/api/admin/users";
-
-      const response = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "X-Auth-Token": token,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to load users.");
-      }
-
+      if (!token) { navigate("/signin"); return; }
+      const endpoint = tab === "ARCHIVED_USERS"
+        ? "https://fyp-backend-cbaa.onrender.com/api/admin/users/archived"
+        : "https://fyp-backend-cbaa.onrender.com/api/admin/users";
+      const res = await fetch(endpoint, { method: "GET", headers: { "X-Auth-Token": token } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to load users.");
       setUsers(data.users || []);
-    } catch (err) {
-      setError(err.message || "Something went wrong while loading users.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   }
 
   async function fetchCandidateProfiles() {
     try {
-      setLoading(true);
-      setError("");
-
+      setLoading(true); setError("");
       const token = getToken();
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-
-      const response = await fetch(
-        "https://fyp-backend-cbaa.onrender.com/api/admin/candidate-profiles",
-        {
-          method: "GET",
-          headers: {
-            "X-Auth-Token": token,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to load candidate profiles.");
-      }
-
+      if (!token) { navigate("/signin"); return; }
+      const res = await fetch("https://fyp-backend-cbaa.onrender.com/api/admin/candidate-profiles", { method: "GET", headers: { "X-Auth-Token": token } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to load profiles.");
       setCandidateProfiles(data.profiles || []);
-    } catch (err) {
-      setError(err.message || "Something went wrong while loading candidate profiles.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   }
 
   async function fetchAdminApplications() {
     try {
-      setLoading(true);
-      setError("");
-
+      setLoading(true); setError("");
       const data = await getAdminApplications();
       setAdminApplications(data.applications || []);
-    } catch (err) {
-      setError(err.message || "Something went wrong while loading applications.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   }
 
   useEffect(() => {
-    if (activeTab === "USER_PROFILES") {
-      fetchCandidateProfiles();
-      return;
-    }
-
-    if (activeTab === "APPLICATIONS") {
-      fetchAdminApplications();
-      return;
-    }
-
+    if (activeTab === "USER_PROFILES") { fetchCandidateProfiles(); return; }
+    if (activeTab === "APPLICATIONS") { fetchAdminApplications(); return; }
     fetchUsers(activeTab);
   }, [activeTab]);
 
-  function handleLogout() {
-    logout();
-    navigate("/signin");
-  }
-
-  function handleTabChange(tab) {
-    setActiveTab(tab);
-    setSearchTerm("");
-    setRoleFilter("");
-    setVerificationFilter("");
-    setError("");
-    setSelectedProfile(null);
-    setShowProfileApplications(false);
-  }
-
-  function getNavStyle(tab) {
-    const isActive = activeTab === tab;
-    const isHovered = hoveredTab === tab;
-
-    return {
-      ...styles.navItem,
-      ...(isActive ? styles.activeNavItem : {}),
-      ...(isHovered && !isActive ? styles.hoveredNavItem : {}),
-    };
-  }
-
-  function handleRoleFilterChange(e) {
-    const value = e.target.value;
-
-    if (value === "RESET") {
-      setRoleFilter("");
-      return;
-    }
-
-    setRoleFilter(value);
-  }
-
-  function handleVerificationFilterChange(e) {
-    const value = e.target.value;
-
-    if (value === "RESET") {
-      setVerificationFilter("");
-      return;
-    }
-
-    setVerificationFilter(value);
-  }
+  function handleLogout() { logout(); navigate("/signin"); }
+  function handleTabChange(tab) { setActiveTab(tab); setSearchTerm(""); setRoleFilter(""); setVerificationFilter(""); setError(""); setSelectedProfile(null); setShowProfileApplications(false); }
 
   function openEditModal(user) {
     setUserToEdit(user);
-    setEditFormData({
-      username: user.username,
-      email: user.email,
-      password: "",
-    });
+    setEditFormData({ username: user.username, email: user.email, password: "" });
     setShowPasswordField(false);
   }
 
-  function handleEditFormChange(e) {
-    setEditFormData({
-      ...editFormData,
-      [e.target.name]: e.target.value,
-    });
-  }
+  function handleEditFormChange(e) { setEditFormData({ ...editFormData, [e.target.name]: e.target.value }); }
 
   async function handleEditUser(e) {
     e.preventDefault();
-
     if (!userToEdit) return;
-
     try {
-      setEditingUser(true);
-      setActionLoadingId(userToEdit.id);
-
+      setEditingUser(true); setActionLoadingId(userToEdit.id);
       const token = getToken();
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-
-      const response = await fetch(
-        `https://fyp-backend-cbaa.onrender.com/api/admin/users/${userToEdit.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Auth-Token": token,
-          },
-          body: JSON.stringify({
-            username: editFormData.username,
-            email: editFormData.email,
-            password: showPasswordField ? editFormData.password : "",
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update user.");
-      }
-
-      setUsers((previousUsers) =>
-        previousUsers.map((user) =>
-          user.id === userToEdit.id ? data.user : user
-        )
-      );
-
-      setUserToEdit(null);
-      setEditFormData({
-        username: "",
-        email: "",
-        password: "",
+      if (!token) { navigate("/signin"); return; }
+      const res = await fetch(`https://fyp-backend-cbaa.onrender.com/api/admin/users/${userToEdit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+        body: JSON.stringify({ username: editFormData.username, email: editFormData.email, password: showPasswordField ? editFormData.password : "" }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update user.");
+      setUsers((prev) => prev.map((u) => u.id === userToEdit.id ? data.user : u));
+      setUserToEdit(null);
+      setEditFormData({ username: "", email: "", password: "" });
       setShowPasswordField(false);
-
-      if (data.emailVerificationRequired) {
-        alert(
-          "User updated successfully. Since the email changed, a new verification email was sent."
-        );
-      }
-    } catch (err) {
-      alert(err.message || "Something went wrong while updating the user.");
-    } finally {
-      setEditingUser(false);
-      setActionLoadingId(null);
-    }
+      if (data.emailVerificationRequired) alert("User updated. New verification email sent.");
+    } catch (err) { alert(err.message); } finally { setEditingUser(false); setActionLoadingId(null); }
   }
 
   async function handleArchiveUser() {
     if (!userToArchive) return;
-
     try {
-      setArchivingUser(true);
-      setActionLoadingId(userToArchive.id);
-
+      setArchivingUser(true); setActionLoadingId(userToArchive.id);
       const token = getToken();
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-
-      const response = await fetch(
-        `https://fyp-backend-cbaa.onrender.com/api/admin/users/${userToArchive.id}/archive`,
-        {
-          method: "PATCH",
-          headers: {
-            "X-Auth-Token": token,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to archive user.");
-      }
-
-      setUsers((previousUsers) =>
-        previousUsers.filter((currentUser) => currentUser.id !== userToArchive.id)
-      );
-
+      if (!token) { navigate("/signin"); return; }
+      const res = await fetch(`https://fyp-backend-cbaa.onrender.com/api/admin/users/${userToArchive.id}/archive`, { method: "PATCH", headers: { "X-Auth-Token": token } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to archive user.");
+      setUsers((prev) => prev.filter((u) => u.id !== userToArchive.id));
       setUserToArchive(null);
-    } catch (err) {
-      alert(err.message || "Something went wrong while archiving the user.");
-    } finally {
-      setArchivingUser(false);
-      setActionLoadingId(null);
-    }
+    } catch (err) { alert(err.message); } finally { setArchivingUser(false); setActionLoadingId(null); }
   }
 
   async function handleRestoreUser(user) {
     try {
       setActionLoadingId(user.id);
-
       const token = getToken();
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-
-      const response = await fetch(
-        `https://fyp-backend-cbaa.onrender.com/api/admin/users/${user.id}/restore`,
-        {
-          method: "PATCH",
-          headers: {
-            "X-Auth-Token": token,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to restore user.");
-      }
-
-      setUsers((previousUsers) =>
-        previousUsers.filter((currentUser) => currentUser.id !== user.id)
-      );
-    } catch (err) {
-      alert(err.message || "Something went wrong while restoring the user.");
-    } finally {
-      setActionLoadingId(null);
-    }
+      if (!token) { navigate("/signin"); return; }
+      const res = await fetch(`https://fyp-backend-cbaa.onrender.com/api/admin/users/${user.id}/restore`, { method: "PATCH", headers: { "X-Auth-Token": token } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to restore user.");
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } catch (err) { alert(err.message); } finally { setActionLoadingId(null); }
   }
 
   async function handleDeleteUser() {
     if (!userToDelete) return;
-
     try {
       setDeletingUser(true);
-
       const token = getToken();
-
-      if (!token) {
-        navigate("/signin");
-        return;
-      }
-
-      const response = await fetch(
-        `https://fyp-backend-cbaa.onrender.com/api/admin/users/${userToDelete.id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "X-Auth-Token": token,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to delete user.");
-      }
-
-      setUsers((previousUsers) =>
-        previousUsers.filter((user) => user.id !== userToDelete.id)
-      );
-
+      if (!token) { navigate("/signin"); return; }
+      const res = await fetch(`https://fyp-backend-cbaa.onrender.com/api/admin/users/${userToDelete.id}`, { method: "DELETE", headers: { "X-Auth-Token": token } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete user.");
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
       setUserToDelete(null);
-    } catch (err) {
-      alert(err.message || "Something went wrong while deleting the user.");
-    } finally {
-      setDeletingUser(false);
-    }
+    } catch (err) { alert(err.message); } finally { setDeletingUser(false); }
   }
 
   function getMainRole(user) {
@@ -407,70 +212,34 @@ function AdminDashboard() {
   }
 
   function formatRole(user) {
-    const mainRole = getMainRole(user);
-
-    if (mainRole === "ADMIN") return "Admin";
-    if (mainRole === "EMPLOYER") return "Employer";
+    const r = getMainRole(user);
+    if (r === "ADMIN") return "Admin";
+    if (r === "EMPLOYER") return "Employer";
     return "User";
   }
 
-  function formatStatus(status) {
-    if (!status) return "Pending";
-
-    return status
-      .replace("_", " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  function formatStatus(s) {
+    if (!s) return "Pending";
+    return s.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
   }
 
-  function formatDate(dateValue) {
-    if (!dateValue) return "Not specified";
-
-    const date = new Date(dateValue);
-
-    if (Number.isNaN(date.getTime())) {
-      return dateValue;
-    }
-
+  function formatDate(d) {
+    if (!d) return "—";
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return d;
     return date.toLocaleDateString("en-GB");
   }
 
   function renderApplicationFileButtons(application, type) {
-    const hasFile =
-      type === "application"
-        ? application.hasApplicationDocument
-        : application.hasRecommendationLetter;
-
-    const label =
-      type === "application"
-        ? application.applicationOriginalName || "Application document"
-        : application.recommendationOriginalName || "Recommendation letter";
-
-    if (!hasFile) {
-      return <span style={styles.noFileText}>No file</span>;
-    }
-
+    const hasFile = type === "application" ? application.hasApplicationDocument : application.hasRecommendationLetter;
+    const label = type === "application" ? application.applicationOriginalName || "Application" : application.recommendationOriginalName || "Recommendation";
+    if (!hasFile) return <span style={{ color: "#94a3b8", fontSize: "12px" }}>No file</span>;
     return (
-      <div style={styles.fileActions}>
-        <span style={styles.fileName}>{label}</span>
-
-        <div style={styles.fileButtons}>
-          <a
-            href={getAdminApplicationFileUrl(application.id, type, false)}
-            target="_blank"
-            rel="noreferrer"
-            style={styles.viewFileButton}
-          >
-            View
-          </a>
-
-          <a
-            href={getAdminApplicationFileUrl(application.id, type, true)}
-            target="_blank"
-            rel="noreferrer"
-            style={styles.downloadFileButton}
-          >
-            Download
-          </a>
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
+        <span style={{ fontSize: "11px", color: "#475569", maxWidth: "110px", wordBreak: "break-word", textAlign: "center" }}>{label}</span>
+        <div style={{ display: "flex", gap: "4px" }}>
+          <a href={getAdminApplicationFileUrl(application.id, type, false)} target="_blank" rel="noreferrer" style={{ textDecoration: "none", background: "#eff6ff", color: "#1d4ed8", padding: "4px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "500" }}>View</a>
+          <a href={getAdminApplicationFileUrl(application.id, type, true)} target="_blank" rel="noreferrer" style={{ textDecoration: "none", background: "#f0fdf4", color: "#16a34a", padding: "4px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "500" }}>Download</a>
         </div>
       </div>
     );
@@ -478,604 +247,350 @@ function AdminDashboard() {
 
   function renderApplicationsTable(applications) {
     return (
-      <div style={styles.tableWrapper}>
-        <table style={styles.applicationsTable}>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
           <thead>
-            <tr>
-              <th style={styles.smallTh}>#</th>
-              <th style={styles.applicationTh}>Candidate</th>
-              <th style={styles.applicationTh}>Job</th>
-              <th style={styles.applicationTh}>Status</th>
-              <th style={styles.applicationTh}>Application</th>
-              <th style={styles.applicationTh}>Recommendation</th>
-              <th style={styles.applicationTh}>Applied</th>
+            <tr style={{ background: "#f8fafc" }}>
+              {["#", "Candidate", "Job", "Status", "Application", "Recommendation", "Applied"].map((h) => (
+                <th key={h} style={{ padding: "12px 10px", fontSize: "11px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid #e8edf5", textAlign: "center" }}>{h}</th>
+              ))}
             </tr>
           </thead>
-
           <tbody>
-            {applications.map((application, index) => (
-              <tr key={application.id || index}>
-                <td style={styles.smallTd}>{index + 1}</td>
-                <td style={styles.applicationTd}>
-                  {application.candidateName || "Unknown"}
+            {applications.map((app, i) => (
+              <tr key={app.id || i} className="row-hover" style={{ transition: "background 0.15s" }}>
+                <td style={S.td}>{i + 1}</td>
+                <td style={S.td}>{app.candidateName || "—"}</td>
+                <td style={S.td}>{app.jobTitle || "—"}</td>
+                <td style={S.td}>
+                  <span style={{ ...S.badge, background: "#eef2ff", color: "#4338ca" }}>{formatStatus(app.status)}</span>
                 </td>
-                <td style={styles.applicationTd}>
-                  {application.jobTitle || "No job title"}
-                </td>
-
-                <td style={styles.applicationTd}>
-                  <div style={styles.centerCell}>
-                    <span style={styles.roleBadge}>
-                      {formatStatus(application.status)}
-                    </span>
-                  </div>
-                </td>
-
-                <td style={styles.applicationTd}>
-                  {renderApplicationFileButtons(application, "application")}
-                </td>
-
-                <td style={styles.applicationTd}>
-                  {renderApplicationFileButtons(application, "recommendation")}
-                </td>
-
-                <td style={styles.applicationTd}>
-                  {formatDate(application.createdAt)}
-                </td>
+                <td style={S.td}>{renderApplicationFileButtons(app, "application")}</td>
+                <td style={S.td}>{renderApplicationFileButtons(app, "recommendation")}</td>
+                <td style={S.td}>{formatDate(app.createdAt)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {applications.length === 0 && (
-          <p style={styles.infoText}>No applications found.</p>
-        )}
+        {applications.length === 0 && <p style={S.empty}>No applications found.</p>}
       </div>
     );
   }
 
   const totalUsers = users.length;
-  const verifiedUsers = users.filter((user) => user.isVerified).length;
-  const unverifiedUsers = users.filter((user) => !user.isVerified).length;
-  const adminUsers = users.filter((user) =>
-    user.roles.includes("ROLE_ADMIN")
-  ).length;
-
+  const verifiedUsers = users.filter((u) => u.isVerified).length;
+  const unverifiedUsers = users.filter((u) => !u.isVerified).length;
+  const adminUsers = users.filter((u) => u.roles.includes("ROLE_ADMIN")).length;
   const totalProfiles = candidateProfiles.length;
-  const completedProfiles = candidateProfiles.filter(
-    (profile) => profile.selectedDisabilities.length > 0
-  ).length;
-  const pendingAbilityProfiles = candidateProfiles.filter(
-    (profile) => profile.remainingAbilities.length === 0
-  ).length;
-  const totalProfileApplications = candidateProfiles.reduce(
-    (total, profile) => total + (profile.applications?.length || 0),
-    0
-  );
+  const completedProfiles = candidateProfiles.filter((p) => p.selectedDisabilities.length > 0).length;
+  const pendingAbilityProfiles = candidateProfiles.filter((p) => p.remainingAbilities.length === 0).length;
+  const totalProfileApplications = candidateProfiles.reduce((t, p) => t + (p.applications?.length || 0), 0);
 
-  const filteredUsers = users.filter((user) => {
-    const searchValue = searchTerm.toLowerCase().trim();
-
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchValue) ||
-      user.email.toLowerCase().includes(searchValue);
-
-    const mainRole = getMainRole(user);
-
-    const matchesRole = roleFilter === "" || mainRole === roleFilter;
-
-    const matchesVerification =
-      verificationFilter === "" ||
-      (verificationFilter === "VERIFIED" && user.isVerified) ||
-      (verificationFilter === "UNVERIFIED" && !user.isVerified);
-
-    return matchesSearch && matchesRole && matchesVerification;
+  const filteredUsers = users.filter((u) => {
+    const s = searchTerm.toLowerCase().trim();
+    return (u.username.toLowerCase().includes(s) || u.email.toLowerCase().includes(s)) &&
+      (roleFilter === "" || getMainRole(u) === roleFilter) &&
+      (verificationFilter === "" || (verificationFilter === "VERIFIED" && u.isVerified) || (verificationFilter === "UNVERIFIED" && !u.isVerified));
   });
 
-  const filteredProfiles = candidateProfiles.filter((profile) => {
-    const searchValue = searchTerm.toLowerCase().trim();
-
-    return (
-      profile.username.toLowerCase().includes(searchValue) ||
-      profile.email.toLowerCase().includes(searchValue)
-    );
+  const filteredProfiles = candidateProfiles.filter((p) => {
+    const s = searchTerm.toLowerCase().trim();
+    return p.username.toLowerCase().includes(s) || p.email.toLowerCase().includes(s);
   });
 
-  const filteredApplications = adminApplications.filter((application) => {
-    const searchValue = searchTerm.toLowerCase().trim();
-
-    return (
-      (application.candidateName || "").toLowerCase().includes(searchValue) ||
-      (application.jobTitle || "").toLowerCase().includes(searchValue) ||
-      (application.status || "").toLowerCase().includes(searchValue)
-    );
+  const filteredApplications = adminApplications.filter((a) => {
+    const s = searchTerm.toLowerCase().trim();
+    return (a.candidateName || "").toLowerCase().includes(s) || (a.jobTitle || "").toLowerCase().includes(s) || (a.status || "").toLowerCase().includes(s);
   });
+
+  const navItems = [
+    { tab: "USERS", label: "Users", icon: <UsersIcon /> },
+    { tab: "ARCHIVED_USERS", label: "Archived Users", icon: <ArchiveIcon /> },
+    { tab: "APPLICATIONS", label: "Applications", icon: <ApplicationsIcon /> },
+    { tab: "USER_PROFILES", label: "User Profiles", icon: <ProfilesIcon /> },
+  ];
+
+  const statsCards = isUserProfilesView ? [
+    { label: "Total Profiles", value: totalProfiles, color: "#2563eb", bg: "#eff6ff", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+    { label: "Completed Profiles", value: completedProfiles, color: "#16a34a", bg: "#f0fdf4", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
+    { label: "Pending Abilities", value: pendingAbilityProfiles, color: "#d97706", bg: "#fffbeb", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
+    { label: "Total Applications", value: totalProfileApplications, color: "#7c3aed", bg: "#f5f3ff", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
+  ] : [
+    { label: isArchivedView ? "Archived Users" : "Active Users", value: totalUsers, color: "#2563eb", bg: "#eff6ff", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+    { label: "Verified Emails", value: verifiedUsers, color: "#16a34a", bg: "#f0fdf4", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
+    { label: "Unverified Users", value: unverifiedUsers, color: "#d97706", bg: "#fffbeb", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> },
+    { label: "Admins", value: adminUsers, color: "#7c3aed", bg: "#f5f3ff", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3L19 6V11C19 15.5 16.2 19.4 12 21C7.8 19.4 5 15.5 5 11V6L12 3Z"/><polyline points="9.5 12 11.3 13.8 15 10"/></svg> },
+  ];
 
   return (
-    <div style={styles.page}>
-      <aside style={styles.sidebar}>
-        <h2 style={styles.logo}>Admin Panel</h2>
+    <div style={{ minHeight: "100vh", display: "flex", fontFamily: '"Inter", -apple-system, sans-serif', background: "#f8fafc", color: "#0f172a" }}>
+      <style>{globalStyles}</style>
 
-        <nav style={styles.nav}>
-          <button
-            style={getNavStyle("USERS")}
-            onMouseEnter={() => setHoveredTab("USERS")}
-            onMouseLeave={() => setHoveredTab(null)}
-            onClick={() => handleTabChange("USERS")}
-          >
-            Users
-          </button>
-
-          <button
-            style={getNavStyle("ARCHIVED_USERS")}
-            onMouseEnter={() => setHoveredTab("ARCHIVED_USERS")}
-            onMouseLeave={() => setHoveredTab(null)}
-            onClick={() => handleTabChange("ARCHIVED_USERS")}
-          >
-            Archived Users
-          </button>
-
-          <button
-            style={getNavStyle("APPLICATIONS")}
-            onMouseEnter={() => setHoveredTab("APPLICATIONS")}
-            onMouseLeave={() => setHoveredTab(null)}
-            onClick={() => handleTabChange("APPLICATIONS")}
-          >
-            Applications
-          </button>
-
-          <button
-            style={getNavStyle("USER_PROFILES")}
-            onMouseEnter={() => setHoveredTab("USER_PROFILES")}
-            onMouseLeave={() => setHoveredTab(null)}
-            onClick={() => handleTabChange("USER_PROFILES")}
-          >
-            User Profiles
-          </button>
-        </nav>
-      </aside>
-
-      <main style={styles.main}>
-        <div style={styles.header}>
-          <button onClick={handleLogout} style={styles.logoutTextButton}>
-            Logout
-          </button>
-
-          <div>
-            <h1 style={styles.title}>Admin Dashboard</h1>
-            <p style={styles.subtitle}>
-              Manage users, applications, and platform activity.
-            </p>
-          </div>
+      {/* SIDEBAR */}
+      <aside style={{ width: "220px", minWidth: "220px", background: "linear-gradient(180deg, #0f172a 0%, #0a1628 100%)", padding: "28px 16px", display: "flex", flexDirection: "column", boxSizing: "border-box", boxShadow: "4px 0 20px rgba(0,0,0,0.15)" }}>
+        <div style={{ marginBottom: "36px", paddingLeft: "8px" }}>
+          <p style={{ margin: 0, fontSize: "10px", fontWeight: "500", color: "#475569", textTransform: "uppercase", letterSpacing: "1px" }}>Platform</p>
+          <h2 style={{ margin: "4px 0 0", fontSize: "18px", fontWeight: "600", color: "#ffffff", letterSpacing: "-0.3px" }}>Admin Console</h2>
         </div>
 
-        {isUserProfilesView ? (
-          <>
-            <section style={styles.cards}>
-              <div style={styles.card}>
-                <p style={styles.cardLabel}>Candidate Profiles</p>
-                <h2 style={styles.cardValue}>{totalProfiles}</h2>
-              </div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          {navItems.map(({ tab, label, icon }) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                className="nav-btn"
+                onClick={() => handleTabChange(tab)}
+                onMouseEnter={() => setHoveredTab(tab)}
+                onMouseLeave={() => setHoveredTab(null)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  background: isActive ? "rgba(59,130,246,0.15)" : "transparent",
+                  color: isActive ? "#60a5fa" : "#94a3b8",
+                  border: "none", textAlign: "left", padding: "10px 12px",
+                  borderRadius: "10px", cursor: "pointer", fontSize: "13px",
+                  fontWeight: isActive ? "600" : "400",
+                  transition: "all 0.15s", fontFamily: "Inter, sans-serif",
+                  borderLeft: isActive ? "2px solid #3b82f6" : "2px solid transparent",
+                }}
+              >
+                {icon}
+                {label}
+              </button>
+            );
+          })}
+        </nav>
 
-              <div style={styles.card}>
-                <p style={styles.cardLabel}>Completed Profiles</p>
-                <h2 style={styles.cardValue}>{completedProfiles}</h2>
-              </div>
+        <div style={{ marginTop: "auto", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "13px", fontWeight: "400", padding: "8px 12px", borderRadius: "8px", fontFamily: "Inter, sans-serif", width: "100%" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Log out
+          </button>
+        </div>
+      </aside>
 
-              <div style={styles.card}>
-                <p style={styles.cardLabel}>Pending Abilities</p>
-                <h2 style={styles.cardValue}>{pendingAbilityProfiles}</h2>
-              </div>
+      {/* MAIN */}
+      <main style={{ flex: 1, padding: "32px 36px", boxSizing: "border-box", overflowX: "hidden" }}>
 
-              <div style={styles.card}>
-                <p style={styles.cardLabel}>Applications</p>
-                <h2 style={styles.cardValue}>{totalProfileApplications}</h2>
-              </div>
-            </section>
+        {/* HEADER */}
+        <div style={{ marginBottom: "28px" }}>
+          <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            {navItems.find((n) => n.tab === activeTab)?.label}
+          </p>
+          <h1 style={{ margin: 0, fontSize: "26px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.4px" }}>
+            {isArchivedView ? "Archived Users" : isUserProfilesView ? "User Profiles" : isApplicationsView ? "Applications" : "Users"}
+          </h1>
+        </div>
 
-            <section style={styles.tableSection}>
-              <div style={styles.tableHeader}>
-                <h2 style={styles.sectionTitle}>USER PROFILES</h2>
-              </div>
-
-              <input
-                type="text"
-                placeholder="Search candidate profile by username or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={styles.profileSearchInput}
-              />
-
-              {loading && <p style={styles.infoText}>Loading profiles...</p>}
-              {error && <p style={styles.errorText}>{error}</p>}
-
-              {!loading && !error && (
-                <div style={styles.profileGrid}>
-                  {filteredProfiles.map((profile) => (
-                    <div key={profile.id} style={styles.profileCard}>
-                      <div style={styles.profileAvatar}>
-                        {profile.username.charAt(0).toUpperCase()}
-                      </div>
-
-                      <h3 style={styles.profileName}>{profile.username}</h3>
-                      <p style={styles.profileEmail}>{profile.email}</p>
-
-                      <div style={styles.profileStats}>
-                        <span style={styles.profileStat}>
-                          {profile.selectedDisabilities.length} disabilities
-                        </span>
-
-                        <span style={styles.profileStat}>
-                          {profile.remainingAbilities.length > 0
-                            ? "Abilities ready"
-                            : "Abilities pending"}
-                        </span>
-
-                        <span style={styles.profileStat}>
-                          {profile.applications?.length || 0} applications
-                        </span>
-                      </div>
-
-                      <button
-                        style={styles.viewProfileButton}
-                        onClick={() => {
-                          setSelectedProfile(profile);
-                          setShowProfileApplications(false);
-                        }}
-                      >
-                        View Profile
-                      </button>
-                    </div>
-                  ))}
-
-                  {filteredProfiles.length === 0 && (
-                    <p style={styles.infoText}>
-                      No candidate profiles match your search.
-                    </p>
-                  )}
+        {/* STATS */}
+        {!isApplicationsView && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
+            {statsCards.map((card) => (
+              <div key={card.label} className="card-stat" style={{ background: "#ffffff", borderRadius: "16px", padding: "20px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)", transition: "all 0.2s ease", cursor: "default" }}>
+                <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
+                  {card.icon}
                 </div>
-              )}
-            </section>
-          </>
-        ) : isApplicationsView ? (
-          <section style={styles.tableSection}>
-            <div style={styles.tableHeader}>
-              <h2 style={styles.sectionTitle}>ALL APPLICATIONS</h2>
-            </div>
-
-            <input
-              type="text"
-              placeholder="Search by candidate, job, or status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={styles.profileSearchInput}
-            />
-
-            {loading && <p style={styles.infoText}>Loading applications...</p>}
-            {error && <p style={styles.errorText}>{error}</p>}
-
-            {!loading && !error && renderApplicationsTable(filteredApplications)}
-          </section>
-        ) : (
-          <>
-            <section style={styles.cards}>
-              <div style={styles.card}>
-                <div style={{...styles.cardIcon, ...styles.usersIcon}}>
-                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
-                    <path d="M9 11C11.2 11 13 9.2 13 7C13 4.8 11.2 3 9 3C6.8 3 5 4.8 5 7C5 9.2 6.8 11 9 11Z" />
-                    <path d="M2.5 21C3.2 16.8 5.6 14.5 9 14.5C12.4 14.5 14.8 16.8 15.5 21" />
-                    <path d="M16 10C17.7 10 19 8.7 19 7C19 5.3 17.7 4 16 4" />
-                    <path d="M17 14.8C19.4 15.3 21 17.4 21.5 21" />
-                  </svg>
-                </div>
-                <p style={styles.cardLabel}>
-                  {isArchivedView ? "Archived Users" : "Active Users"}
-                </p>
-                <h2 style={styles.cardValue}>{totalUsers}</h2>
+                <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8" }}>{card.label}</p>
+                <p style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.5px" }}>{card.value}</p>
               </div>
-
-              <div style={styles.card}>
-                <div style={{...styles.cardIcon, ...styles.verifiedIcon}}>
-                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
-                    <path d="M20 7L10 17L5 12" />
-                  </svg>
-                </div>
-                <p style={styles.cardLabel}>Verified Emails</p>
-                <h2 style={styles.cardValue}>{verifiedUsers}</h2>
-              </div>
-
-              <div style={styles.card}>
-                <div style={{...styles.cardIcon, ...styles.unverifiedIcon}}>
-                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
-                    <path d="M12 4L21 20H3L12 4Z" />
-                    <path d="M12 9V13" />
-                    <path d="M12 17H12.01" />
-                  </svg>
-                </div>
-                <p style={styles.cardLabel}>Unverified Users</p>
-                <h2 style={styles.cardValue}>{unverifiedUsers}</h2>
-              </div>
-
-              <div style={styles.card}>
-                <div style={{...styles.cardIcon, ...styles.adminIcon}}>
-                  <svg style={styles.cardSvg} viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3L19 6V11C19 15.5 16.2 19.4 12 21C7.8 19.4 5 15.5 5 11V6L12 3Z" />
-                    <path d="M9.5 12L11.3 13.8L15 10" />
-                  </svg>
-                </div>
-                <p style={styles.cardLabel}>Admins</p>
-                <h2 style={styles.cardValue}>{adminUsers}</h2>
-              </div>
-            </section>
-
-            <section style={styles.tableSection}>
-              <div style={styles.tableHeader}>
-                <div style={styles.tableTitleRow}>
-                  <h2 style={styles.sectionTitle}>
-                    {isArchivedView ? "Archived Users" : "Users"}
-                  </h2>
-
-                  {!loading && !error && (
-                    <span style={styles.tableCount}>
-                      {filteredUsers.length}/{users.length}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div style={styles.filtersRow}>
-                <input
-                  type="text"
-                  placeholder="Search by username or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={styles.searchInput}
-                />
-
-                <select
-                  value={roleFilter}
-                  onChange={handleRoleFilterChange}
-                  style={styles.filterSelect}
-                >
-                  <option value="" disabled hidden>
-                    Filter by Role
-                  </option>
-                  <option value="RESET">--</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="USER">User</option>
-                  <option value="EMPLOYER">Employer</option>
-                </select>
-
-                <select
-                  value={verificationFilter}
-                  onChange={handleVerificationFilterChange}
-                  style={styles.filterSelect}
-                >
-                  <option value="" disabled hidden>
-                    Filter by Email Status
-                  </option>
-                  <option value="RESET">--</option>
-                  <option value="VERIFIED">Verified email</option>
-                  <option value="UNVERIFIED">Unverified email</option>
-                </select>
-              </div>
-
-              {loading && <p style={styles.infoText}>Loading users...</p>}
-              {error && <p style={styles.errorText}>{error}</p>}
-
-              {!loading && !error && (
-                <div style={styles.tableWrapper}>
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>#</th>
-                        <th style={styles.th}>USERNAME</th>
-                        <th style={styles.th}>EMAIL</th>
-                        <th style={styles.th}>ROLE</th>
-                        <th style={styles.th}>VERIFIED</th>
-                        <th style={styles.actionsTh}>ACTIONS</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {filteredUsers.map((user, index) => (
-                        <tr key={user.id}>
-                          <td style={styles.td}>{index + 1}</td>
-                          <td style={styles.td}>{user.username}</td>
-                          <td style={styles.td}>{user.email}</td>
-
-                          <td style={styles.td}>
-                            <div style={styles.centerCell}>
-                              <span style={styles.roleBadge}>{formatRole(user)}</span>
-                            </div>
-                          </td>
-
-                          <td style={styles.td}>
-                            <div style={styles.centerCell}>
-                              <span
-                                style={{
-                                  ...styles.statusBadge,
-                                  ...(user.isVerified
-                                    ? styles.verified
-                                    : styles.unverified),
-                                }}
-                              >
-                                {user.isVerified ? "Verified" : "Unverified"}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td style={styles.actionsTd}>
-                            <div style={styles.actions}>
-                              {!isArchivedView ? (
-                                <>
-                                  <button
-                                    style={styles.actionButton}
-                                    onClick={() => openEditModal(user)}
-                                    disabled={actionLoadingId === user.id}
-                                  >
-                                    Edit
-                                  </button>
-
-                                  <button
-                                    onClick={() => setUserToArchive(user)}
-                                    style={styles.archiveButton}
-                                    disabled={actionLoadingId === user.id}
-                                  >
-                                    Archive
-                                  </button>
-
-                                  <button
-                                    onClick={() => setUserToDelete(user)}
-                                    style={styles.deleteButton}
-                                  >
-                                    Delete
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleRestoreUser(user)}
-                                    style={styles.restoreButton}
-                                    disabled={actionLoadingId === user.id}
-                                  >
-                                    {actionLoadingId === user.id
-                                      ? "Restoring..."
-                                      : "Restore"}
-                                  </button>
-
-                                  <button
-                                    onClick={() => setUserToDelete(user)}
-                                    style={styles.deleteButton}
-                                  >
-                                    Delete
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {filteredUsers.length === 0 && (
-                    <p style={styles.infoText}>
-                      {isArchivedView
-                        ? "No archived users match your search or filters."
-                        : "No users match your search or filters."}
-                    </p>
-                  )}
-                </div>
-              )}
-            </section>
-          </>
+            ))}
+          </div>
         )}
+
+        {/* CONTENT */}
+        <div style={{ background: "#ffffff", borderRadius: "20px", padding: "24px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)" }}>
+
+          {/* SEARCH + FILTERS */}
+          {!isApplicationsView && (
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
+              <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}>
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder={isUserProfilesView ? "Search profiles..." : "Search users..."} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px 9px 34px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", boxSizing: "border-box", background: "#f8fafc", fontFamily: "Inter, sans-serif", color: "#0f172a" }} />
+              </div>
+              {!isUserProfilesView && !isArchivedView && (
+                <>
+                  <select value={roleFilter} onChange={(e) => e.target.value === "RESET" ? setRoleFilter("") : setRoleFilter(e.target.value)}
+                    style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", background: "#f8fafc", color: "#475569", cursor: "pointer", outline: "none", fontFamily: "Inter, sans-serif" }}>
+                    <option value="" disabled hidden>Role</option>
+                    <option value="RESET">All roles</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="USER">User</option>
+                    <option value="EMPLOYER">Employer</option>
+                  </select>
+                  <select value={verificationFilter} onChange={(e) => e.target.value === "RESET" ? setVerificationFilter("") : setVerificationFilter(e.target.value)}
+                    style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", background: "#f8fafc", color: "#475569", cursor: "pointer", outline: "none", fontFamily: "Inter, sans-serif" }}>
+                    <option value="" disabled hidden>Email status</option>
+                    <option value="RESET">All statuses</option>
+                    <option value="VERIFIED">Verified</option>
+                    <option value="UNVERIFIED">Unverified</option>
+                  </select>
+                </>
+              )}
+              {!isUserProfilesView && (
+                <span style={{ display: "flex", alignItems: "center", fontSize: "12px", color: "#94a3b8", fontWeight: "400", whiteSpace: "nowrap" }}>
+                  {isUserProfilesView ? filteredProfiles.length : filteredUsers.length} result{(isUserProfilesView ? filteredProfiles.length : filteredUsers.length) !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
+
+          {isApplicationsView && (
+            <div style={{ position: "relative", marginBottom: "20px" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}>
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+              <input type="text" placeholder="Search applications..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: "100%", padding: "9px 12px 9px 34px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", background: "#f8fafc", fontFamily: "Inter, sans-serif", color: "#0f172a" }} />
+            </div>
+          )}
+
+          {loading && <p style={S.empty}>Loading...</p>}
+          {error && <p style={{ color: "#dc2626", fontSize: "13px", textAlign: "center" }}>{error}</p>}
+
+          {/* USERS TABLE */}
+          {!loading && !error && !isUserProfilesView && !isApplicationsView && (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc" }}>
+                    {["#", "Username", "Email", "Role", "Verified", "Actions"].map((h) => (
+                      <th key={h} style={{ padding: "11px 14px", fontSize: "11px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid #e8edf5", textAlign: h === "Actions" ? "center" : "left" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user, index) => (
+                    <tr key={user.id} className="row-hover" style={{ transition: "background 0.15s" }}>
+                      <td style={{ ...S.td, textAlign: "left", width: "40px", color: "#94a3b8" }}>{index + 1}</td>
+                      <td style={{ ...S.td, textAlign: "left", fontWeight: "500" }}>{user.username}</td>
+                      <td style={{ ...S.td, textAlign: "left", color: "#64748b" }}>{user.email}</td>
+                      <td style={{ ...S.td, textAlign: "left" }}>
+                        <span style={{ ...S.badge, background: "#eef2ff", color: "#4338ca" }}>{formatRole(user)}</span>
+                      </td>
+                      <td style={{ ...S.td, textAlign: "left" }}>
+                        <span style={{ ...S.badge, ...(user.isVerified ? { background: "#f0fdf4", color: "#16a34a" } : { background: "#fffbeb", color: "#d97706" }) }}>
+                          {user.isVerified ? "Verified" : "Unverified"}
+                        </span>
+                      </td>
+                      <td style={{ ...S.td, textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                          {!isArchivedView ? (
+                            <>
+                              <button className="action-btn" onClick={() => openEditModal(user)} disabled={actionLoadingId === user.id} style={S.btnBlue}>Edit</button>
+                              <button className="action-btn" onClick={() => setUserToArchive(user)} disabled={actionLoadingId === user.id} style={S.btnGray}>Archive</button>
+                              <button className="action-btn" onClick={() => setUserToDelete(user)} style={S.btnRed}>Delete</button>
+                            </>
+                          ) : (
+                            <>
+                              <button className="action-btn" onClick={() => handleRestoreUser(user)} disabled={actionLoadingId === user.id} style={S.btnGreen}>{actionLoadingId === user.id ? "..." : "Restore"}</button>
+                              <button className="action-btn" onClick={() => setUserToDelete(user)} style={S.btnRed}>Delete</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredUsers.length === 0 && <p style={S.empty}>No users match your search.</p>}
+            </div>
+          )}
+
+          {/* APPLICATIONS */}
+          {!loading && !error && isApplicationsView && renderApplicationsTable(filteredApplications)}
+
+          {/* USER PROFILES */}
+          {!loading && !error && isUserProfilesView && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "14px" }}>
+              {filteredProfiles.map((profile) => (
+                <div key={profile.id} style={{ background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "16px", padding: "20px", textAlign: "center" }}>
+                  <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg, #1d4ed8, #3b82f6)", color: "#fff", margin: "0 auto 12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "17px", fontWeight: "600" }}>
+                    {profile.username.charAt(0).toUpperCase()}
+                  </div>
+                  <p style={{ margin: "0 0 3px", fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{profile.username}</p>
+                  <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#94a3b8", wordBreak: "break-word" }}>{profile.email}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: "14px" }}>
+                    {[
+                      `${profile.selectedDisabilities.length} disabilities`,
+                      profile.remainingAbilities.length > 0 ? "Abilities ready" : "Abilities pending",
+                      `${profile.applications?.length || 0} applications`,
+                    ].map((s) => (
+                      <span key={s} style={{ background: "#ffffff", border: "1px solid #e8edf5", borderRadius: "8px", padding: "6px 10px", fontSize: "12px", fontWeight: "400", color: "#475569" }}>{s}</span>
+                    ))}
+                  </div>
+                  <button onClick={() => { setSelectedProfile(profile); setShowProfileApplications(false); }}
+                    style={{ border: "none", background: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>
+                    View Profile
+                  </button>
+                </div>
+              ))}
+              {filteredProfiles.length === 0 && <p style={S.empty}>No profiles found.</p>}
+            </div>
+          )}
+        </div>
       </main>
 
+      {/* PROFILE MODAL */}
       {selectedProfile && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.profileModal}>
-            <div style={styles.profileModalScroll}>
-              <div style={styles.profileModalTop}>
-                <div>
-                  <h2 style={styles.profileModalTitle}>Candidate Profile</h2>
-                  <p style={styles.profileModalSubtitle}>
-                    Detailed candidate information and activity
-                  </p>
-                </div>
-              </div>
-
-              <div style={styles.profileModalHeader}>
-                <div style={styles.profileAvatarLarge}>
+        <div style={S.overlay}>
+          <div style={{ width: "100%", maxWidth: "860px", maxHeight: "88vh", background: "#ffffff", borderRadius: "20px", boxShadow: "0 20px 60px rgba(15,23,42,0.2)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "28px" }}>
+              <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: "600", color: "#0f172a" }}>Candidate Profile</h2>
+              <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#94a3b8" }}>Detailed candidate information</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "14px", padding: "16px", marginBottom: "18px" }}>
+                <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "linear-gradient(135deg, #1d4ed8, #3b82f6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "19px", fontWeight: "600", flexShrink: 0 }}>
                   {selectedProfile.username.charAt(0).toUpperCase()}
                 </div>
-
                 <div>
-                  <h3 style={styles.profileModalName}>{selectedProfile.username}</h3>
-                  <p style={styles.profileModalEmail}>{selectedProfile.email}</p>
+                  <p style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" }}>{selectedProfile.username}</p>
+                  <p style={{ margin: "3px 0 0", fontSize: "13px", color: "#64748b" }}>{selectedProfile.email}</p>
                 </div>
               </div>
-
-              <div style={styles.profileDetailsGrid}>
-                <div style={styles.profileSection}>
-                  <h3 style={styles.profileSectionTitle}>Selected Disabilities</h3>
-
-                  {selectedProfile.selectedDisabilities.length > 0 ? (
-                    <div style={styles.chipRow}>
-                      {selectedProfile.selectedDisabilities.map((disability) => (
-                        <span key={disability} style={styles.profileChip}>
-                          {disability}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={styles.profileEmptyText}>No disabilities selected yet.</p>
-                  )}
-                </div>
-
-                <div style={styles.profileSection}>
-                  <h3 style={styles.profileSectionTitle}>Remaining Abilities</h3>
-
-                  {selectedProfile.remainingAbilities.length > 0 ? (
-                    <div style={styles.chipRow}>
-                      {selectedProfile.remainingAbilities.map((ability) => (
-                        <span key={ability} style={styles.abilityChip}>
-                          {ability}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={styles.profileEmptyText}>
-                      Remaining abilities are pending analysis.
-                    </p>
-                  )}
-                </div>
-
-                <div style={styles.profileSection}>
-                  <h3 style={styles.profileSectionTitle}>Applications</h3>
-
-                  <p style={styles.profileEmptyText}>
-                    This user has applied to{" "}
-                    <strong>{selectedProfile.applications?.length || 0}</strong>{" "}
-                    application(s).
-                  </p>
-
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                {[
+                  { title: "Selected Disabilities", chips: selectedProfile.selectedDisabilities, empty: "No disabilities selected.", chipStyle: { background: "#eef2ff", color: "#4338ca" } },
+                  { title: "Remaining Abilities", chips: selectedProfile.remainingAbilities, empty: "Abilities pending analysis.", chipStyle: { background: "#f0fdf4", color: "#16a34a" } },
+                ].map(({ title, chips, empty, chipStyle }) => (
+                  <div key={title} style={{ background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "14px", padding: "16px" }}>
+                    <p style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: "600", color: "#0f172a" }}>{title}</p>
+                    {chips.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        {chips.map((c) => <span key={c} style={{ ...chipStyle, padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "400" }}>{c}</span>)}
+                      </div>
+                    ) : <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>{empty}</p>}
+                  </div>
+                ))}
+                <div style={{ background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "14px", padding: "16px" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "13px", fontWeight: "600", color: "#0f172a" }}>Applications</p>
+                  <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#64748b" }}>{selectedProfile.applications?.length || 0} application(s)</p>
                   {(selectedProfile.applications?.length || 0) > 0 && (
-                    <button
-                      style={styles.viewApplicationsButton}
-                      onClick={() =>
-                        setShowProfileApplications((previousValue) => !previousValue)
-                      }
-                    >
-                      {showProfileApplications ? "Hide Applications" : "View Applications"}
+                    <button onClick={() => setShowProfileApplications((p) => !p)}
+                      style={{ border: "none", background: "#2563eb", color: "#fff", padding: "7px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>
+                      {showProfileApplications ? "Hide" : "View"} Applications
                     </button>
                   )}
                 </div>
-
-                <div style={styles.profileSection}>
-                  <h3 style={styles.profileSectionTitle}>Last Updated</h3>
-                  <p style={styles.profileEmptyText}>
-                    {selectedProfile.updatedAt || "Not updated yet."}
-                  </p>
+                <div style={{ background: "#f8fafc", border: "1px solid #e8edf5", borderRadius: "14px", padding: "16px" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "13px", fontWeight: "600", color: "#0f172a" }}>Last Updated</p>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>{selectedProfile.updatedAt || "Not updated yet."}</p>
                 </div>
               </div>
-
               {showProfileApplications && (
-                <div style={styles.profileApplicationsBlock}>
+                <div style={{ marginTop: "16px", border: "1px solid #e8edf5", borderRadius: "14px", padding: "16px" }}>
                   {renderApplicationsTable(selectedProfile.applications || [])}
                 </div>
               )}
             </div>
-
-            <div style={styles.profileModalFooter}>
-              <button
-                onClick={() => {
-                  setSelectedProfile(null);
-                  setShowProfileApplications(false);
-                }}
-                style={styles.confirmEditButton}
-              >
+            <div style={{ borderTop: "1px solid #e8edf5", padding: "14px 28px", display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => { setSelectedProfile(null); setShowProfileApplications(false); }}
+                style={{ border: "none", background: "#2563eb", color: "#fff", padding: "9px 20px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>
                 Close
               </button>
             </div>
@@ -1083,96 +598,41 @@ function AdminDashboard() {
         </div>
       )}
 
+      {/* EDIT MODAL */}
       {userToEdit && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.editModal}>
-            <h2 style={styles.modalTitle}>Edit user</h2>
-
-            <p style={styles.modalText}>
-              Update <strong>{userToEdit.username}</strong>&apos;s account
-              information.
-            </p>
-
-            <form onSubmit={handleEditUser} style={styles.editForm}>
-              <div style={styles.editField}>
-                <label style={styles.editLabel}>Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={editFormData.username}
-                  onChange={handleEditFormChange}
-                  style={styles.editInput}
-                  placeholder="Enter username"
-                />
+        <div style={S.overlay}>
+          <div style={{ width: "100%", maxWidth: "460px", background: "#fff", borderRadius: "18px", padding: "28px", boxShadow: "0 20px 60px rgba(15,23,42,0.18)" }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>Edit User</h2>
+            <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#64748b" }}>Update {userToEdit.username}&apos;s account information.</p>
+            <form onSubmit={handleEditUser} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[{ label: "Username", name: "username", type: "text" }, { label: "Email", name: "email", type: "email" }].map(({ label, name, type }) => (
+                <div key={name}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "500", color: "#475569", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.4px" }}>{label}</label>
+                  <input type={type} name={name} value={editFormData[name]} onChange={handleEditFormChange}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "9px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", boxSizing: "border-box", fontFamily: "Inter, sans-serif" }} />
+                </div>
+              ))}
+              <div style={{ background: "#eff6ff", borderRadius: "9px", padding: "10px 12px", fontSize: "12px", color: "#1d4ed8" }}>
+                If the email changes, a new verification email will be sent.
               </div>
-
-              <div style={styles.editField}>
-                <label style={styles.editLabel}>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={editFormData.email}
-                  onChange={handleEditFormChange}
-                  style={styles.editInput}
-                  placeholder="Enter email"
-                />
-              </div>
-
-              <p style={styles.emailEditNote}>
-                If the email is changed, the user will become unverified and a
-                new verification email will be sent.
-              </p>
-
-              <div style={styles.passwordSection}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPasswordField((previousValue) => !previousValue);
-                    setEditFormData((previousData) => ({
-                      ...previousData,
-                      password: "",
-                    }));
-                  }}
-                  style={styles.changePasswordButton}
-                >
-                  {showPasswordField
-                    ? "Cancel password change"
-                    : "Change password"}
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <button type="button" onClick={() => { setShowPasswordField((p) => !p); setEditFormData((d) => ({ ...d, password: "" })); }}
+                  style={{ border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", padding: "9px 14px", borderRadius: "9px", cursor: "pointer", fontSize: "12px", fontFamily: "Inter, sans-serif", alignSelf: "flex-start" }}>
+                  {showPasswordField ? "Cancel password change" : "Change password"}
                 </button>
-
                 {showPasswordField && (
-                  <div style={styles.editField}>
-                    <label style={styles.editLabel}>Type new password</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={editFormData.password}
-                      onChange={handleEditFormChange}
-                      style={styles.editInput}
-                      placeholder="Enter new password"
-                    />
+                  <div>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "500", color: "#475569", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.4px" }}>New Password</label>
+                    <input type="password" name="password" value={editFormData.password} onChange={handleEditFormChange}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: "9px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", boxSizing: "border-box", fontFamily: "Inter, sans-serif" }} />
                   </div>
                 )}
               </div>
-
-              <div style={styles.modalActions}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserToEdit(null);
-                    setShowPasswordField(false);
-                  }}
-                  style={styles.cancelModalButton}
-                  disabled={editingUser}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  style={styles.confirmEditButton}
-                  disabled={editingUser}
-                >
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "6px" }}>
+                <button type="button" onClick={() => { setUserToEdit(null); setShowPasswordField(false); }} disabled={editingUser}
+                  style={{ border: "1px solid #e2e8f0", background: "#fff", color: "#475569", padding: "9px 16px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontFamily: "Inter, sans-serif" }}>Cancel</button>
+                <button type="submit" disabled={editingUser}
+                  style={{ border: "none", background: "#2563eb", color: "#fff", padding: "9px 16px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>
                   {editingUser ? "Saving..." : "Save Changes"}
                 </button>
               </div>
@@ -1181,70 +641,42 @@ function AdminDashboard() {
         </div>
       )}
 
+      {/* ARCHIVE MODAL */}
       {userToArchive && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h2 style={styles.modalTitle}>Archive user?</h2>
-
-            <p style={styles.modalText}>
-              You are about to archive <strong>{userToArchive.username}</strong>.
-            </p>
-
-            <p style={styles.archiveModalWarning}>
-              This user will be removed from the active users table and moved to
-              Archived Users.
-            </p>
-
-            <div style={styles.modalActions}>
-              <button
-                onClick={() => setUserToArchive(null)}
-                style={styles.cancelModalButton}
-                disabled={archivingUser}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleArchiveUser}
-                style={styles.confirmArchiveButton}
-                disabled={archivingUser}
-              >
-                {archivingUser ? "Archiving..." : "Archive User"}
+        <div style={S.overlay}>
+          <div style={{ width: "100%", maxWidth: "400px", background: "#fff", borderRadius: "18px", padding: "28px", boxShadow: "0 20px 60px rgba(15,23,42,0.18)", textAlign: "center" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#fffbeb", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+              <ArchiveIcon />
+            </div>
+            <h2 style={{ margin: "0 0 8px", fontSize: "17px", fontWeight: "600", color: "#0f172a" }}>Archive user?</h2>
+            <p style={{ margin: "0 0 6px", fontSize: "13px", color: "#64748b" }}>You are about to archive <strong>{userToArchive.username}</strong>.</p>
+            <p style={{ margin: "0 0 22px", fontSize: "12px", color: "#d97706" }}>This user will be moved to Archived Users.</p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button onClick={() => setUserToArchive(null)} disabled={archivingUser}
+                style={{ border: "1px solid #e2e8f0", background: "#fff", color: "#475569", padding: "9px 16px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontFamily: "Inter, sans-serif" }}>Cancel</button>
+              <button onClick={handleArchiveUser} disabled={archivingUser}
+                style={{ border: "none", background: "#d97706", color: "#fff", padding: "9px 16px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>
+                {archivingUser ? "Archiving..." : "Archive"}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* DELETE MODAL */}
       {userToDelete && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalIcon}>!</div>
-
-            <h2 style={styles.modalTitle}>Delete user?</h2>
-
-            <p style={styles.modalText}>
-              You are about to permanently delete{" "}
-              <strong>{userToDelete.username}</strong> from the platform.
-            </p>
-
-            <p style={styles.modalWarning}>This action cannot be undone.</p>
-
-            <div style={styles.modalActions}>
-              <button
-                onClick={() => setUserToDelete(null)}
-                style={styles.cancelModalButton}
-                disabled={deletingUser}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleDeleteUser}
-                style={styles.confirmDeleteButton}
-                disabled={deletingUser}
-              >
-                {deletingUser ? "Deleting..." : "Delete User"}
+        <div style={S.overlay}>
+          <div style={{ width: "100%", maxWidth: "400px", background: "#fff", borderRadius: "18px", padding: "28px", boxShadow: "0 20px 60px rgba(15,23,42,0.18)", textAlign: "center" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#fef2f2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: "18px", fontWeight: "600" }}>!</div>
+            <h2 style={{ margin: "0 0 8px", fontSize: "17px", fontWeight: "600", color: "#0f172a" }}>Delete user?</h2>
+            <p style={{ margin: "0 0 6px", fontSize: "13px", color: "#64748b" }}>You are about to permanently delete <strong>{userToDelete.username}</strong>.</p>
+            <p style={{ margin: "0 0 22px", fontSize: "12px", color: "#dc2626" }}>This action cannot be undone.</p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button onClick={() => setUserToDelete(null)} disabled={deletingUser}
+                style={{ border: "1px solid #e2e8f0", background: "#fff", color: "#475569", padding: "9px 16px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontFamily: "Inter, sans-serif" }}>Cancel</button>
+              <button onClick={handleDeleteUser} disabled={deletingUser}
+                style={{ border: "none", background: "#dc2626", color: "#fff", padding: "9px 16px", borderRadius: "9px", cursor: "pointer", fontSize: "13px", fontWeight: "500", fontFamily: "Inter, sans-serif" }}>
+                {deletingUser ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
@@ -1254,976 +686,15 @@ function AdminDashboard() {
   );
 }
 
-const styles = {
-  page: {
-    minHeight: "100vh",
-    display: "flex",
-    background:
-      "linear-gradient(135deg, #eef4ff 0%, #f8fbff 40%, #edf2ff 100%)",
-    color: "#1f2937",
-    fontFamily: "Inter, system-ui, Arial, sans-serif",
-    overflowX: "hidden",
-  },
-
-  sidebar: {
-    width: "240px",
-    minWidth: "240px",
-    background:
-      "linear-gradient(180deg, #121b31 0%, #081020 45%, #000000 100%)",
-    color: "white",
-    padding: "32px 20px",
-    display: "flex",
-    flexDirection: "column",
-    boxSizing: "border-box",
-    borderRight: "1px solid rgba(255,255,255,0.05)",
-    boxShadow: "8px 0 30px rgba(15, 23, 42, 0.18)",
-  },
-
-  logo: {
-    fontSize: "28px",
-    marginBottom: "38px",
-    whiteSpace: "nowrap",
-    fontWeight: "800",
-    letterSpacing: "-0.8px",
-    color: "#ffffff",
-  },
-
-  nav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-
-  navItem: {
-    background: "transparent",
-    color: "#cbd5e1",
-    border: "none",
-    textAlign: "left",
-    padding: "14px 18px",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: "500",
-    transition: "all 0.18s ease",
-  },
-
-  activeNavItem: {
-    background: "rgba(59, 130, 246, 0.12)",
-    color: "#ffffff",
-    fontWeight: "700",
-    boxShadow: "inset 4px 0 0 #cdd2d9",
-  },
-
-  hoveredNavItem: {
-    background: "rgba(255,255,255,0.05)",
-    color: "#ffffff",
-  },
-
-  logoutButton: {
-    marginTop: "auto",
-    background: "#ef4444",
-    color: "white",
-    border: "none",
-    padding: "12px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-
-  main: {
-    flex: 1,
-    padding: "36px",
-    maxWidth: "calc(100vw - 255px)",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
-
-  header: {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    marginBottom: "34px",
-  },
-
-  logoutTextButton: {
-    position: "absolute",
-    top: "8px",
-    right: "0",
-    border: "none",
-    background: "transparent",
-    color: "#dc2626",
-    fontSize: "15px",
-    fontWeight: "800",
-    cursor: "pointer",
-    padding: 0,
-  },
-
-  logoutButton: {
-    display: "none",
-  },
-
-  title: {
-    fontSize: "40px",
-    margin: 0,
-    color: "#0f172a",
-    fontWeight: "800",
-    letterSpacing: "-1.5px",
-    textAlign: "left",
-  },
-
-  subtitle: {
-    marginTop: "10px",
-    color: "#475569",
-    fontSize: "16px",
-    fontWeight: "500",
-    textAlign: "left",
-  },
-  
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-    gap: "22px",
-    marginBottom: "30px",
-  },
-
-  card: {
-    background: "rgba(255,255,255,0.9)",
-    borderRadius: "20px",
-    padding: "14px 18px",
-    border: "1px solid rgba(226,232,240,0.9)",
-    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.06)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "5px",
-    height: "135px",
-    minHeight: "unset",
-  },
-  
-  cardIcon: {
-    width: "44px",
-    height: "44px",
-    borderRadius: "15px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    marginBottom: "4px",
-  },
-
-  cardLabel: {
-    color: "#475569",
-    margin: 0,
-    fontSize: "15px",
-    fontWeight: "700",
-    letterSpacing: "0.1px",
-    lineHeight: "1",
-  },
-
-  cardValue: {
-    margin: "4px 0 0",
-    fontSize: "34px",
-    color: "#0c2364",
-    fontWeight: "900",
-    letterSpacing: "-0.8px",
-    lineHeight: "1",
-  },
-
-  cardSvg: {
-    width: "24px",
-    height: "24px",
-    stroke: "currentColor",
-    strokeWidth: 2.2,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  },
-
-  usersIcon: {
-    background: "#dccfe5",
-    color: "#9646e5",
-  },
-
-  verifiedIcon: {
-    background: "#dcfce7",
-    color: "#16a34a",
-  },
-
-  unverifiedIcon: {
-    background: "#fef3c7",
-    color: "#d97706",
-  },
-
-  adminIcon: {
-    background: "#dbeafe",
-    color: "#2563eb",
-  },
-
-  tableSection: {
-    background: "rgba(255,255,255,0.92)",
-    borderRadius: "28px",
-    padding: "30px 28px 26px",
-    boxShadow:
-      "0 14px 40px rgba(15, 23, 42, 0.08)",
-    width: "100%",
-    boxSizing: "border-box",
-    overflow: "hidden",
-    border: "1px solid rgba(226,232,240,0.8)",
-    backdropFilter: "blur(12px)",
-  },
-
-  tableHeader: {
-    marginBottom: "20px",
-  },
-
-  tableTitleRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  sectionTitle: {
-    margin: 0,
-    fontSize: "22px",
-    color: "#111827",
-    fontWeight: "800",
-    letterSpacing: "-0.3px",
-  },
-
-  tableCount: {
-    color: "#64748b",
-    fontSize: "14px",
-    fontWeight: "800",
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    borderRadius: "999px",
-    padding: "7px 12px",
-  },
-
-  filtersRow: {
-    display: "grid",
-    gridTemplateColumns: "minmax(260px, 1fr) 170px 210px",
-    gap: "12px",
-    alignItems: "center",
-    marginBottom: "12px",
-  },
-
-  searchInput: {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "16px",
-    border: "1px solid #768db1",
-    fontSize: "14px",
-    outline: "none",
-    boxSizing: "border-box",
-    background: "#f0f5fc",
-    color: "#0f172a",
-  },
-
-  profileSearchInput: {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "16px",
-    border: "1px solid #dbe3ef",
-    fontSize: "14px",
-    outline: "none",
-    boxSizing: "border-box",
-    marginBottom: "24px",
-    background: "#f8fbff",
-    color: "#0f172a",
-  },
-
-  filterSelect: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #b9c9e0",
-    fontSize: "14px",
-    background: "white",
-    color: "#374151",
-    cursor: "pointer",
-    outline: "none",
-    appearance: "auto",
-    boxSizing: "border-box",
-  },
-
-  resultsText: {
-    color: "#6b7280",
-    fontSize: "14px",
-    marginBottom: "14px",
-    textAlign: "center",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    overflowX: "auto",
-  },
-
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-
-  applicationsTable: {
-    width: "100%",
-    tableLayout: "fixed",
-    borderCollapse: "collapse",
-  },
-
-  th: {
-    textAlign: "center",
-    padding: "15px 14px",
-    background: "#f8fafc",
-    color: "#475569",
-    fontSize: "14px",
-    fontWeight: "700",
-    letterSpacing: "0.8px",
-    textTransform: "uppercase",
-    borderBottom: "1px solid #e5e7eb",
-  },
-
-  smallTh: {
-    width: "44px",
-    textAlign: "center",
-    padding: "16px 8px",
-    background: "#f9fafb",
-    color: "#374151",
-    fontSize: "13px",
-    fontWeight: "800",
-    textTransform: "uppercase",
-    borderBottom: "1px solid #e5e7eb",
-  },
-
-  applicationTh: {
-    textAlign: "center",
-    padding: "16px 8px",
-    background: "#f9fafb",
-    color: "#374151",
-    fontSize: "13px",
-    fontWeight: "800",
-    letterSpacing: "0.3px",
-    textTransform: "uppercase",
-    borderBottom: "1px solid #e5e7eb",
-  },
-
-  actionsTh: {
-    textAlign: "center",
-    padding: "18px 12px",
-    background: "#f9fafb",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "700",
-    letterSpacing: "0.8px",
-    textTransform: "uppercase",
-    borderBottom: "1px solid #e5e7eb",
-    borderLeft: "1px solid #eef2f7",
-    width: "145px",
-  },
-
-  td: {
-    padding: "13px 14px",
-    borderBottom: "1px solid #e5e7eb",
-    fontSize: "14px",
-    verticalAlign: "middle",
-    textAlign: "center",
-  },
-
-  smallTd: {
-    width: "44px",
-    padding: "14px 8px",
-    borderBottom: "1px solid #e5e7eb",
-    fontSize: "13px",
-    verticalAlign: "middle",
-    textAlign: "center",
-  },
-
-  applicationTd: {
-    padding: "14px 8px",
-    borderBottom: "1px solid #e5e7eb",
-    fontSize: "13px",
-    verticalAlign: "middle",
-    textAlign: "center",
-    wordBreak: "break-word",
-  },
-
-  actionsTd: {
-    padding: "14px 12px",
-    borderBottom: "1px solid #e5e7eb",
-    borderLeft: "1px solid #eef2f7",
-    fontSize: "14px",
-    verticalAlign: "middle",
-    width: "145px",
-  },
-
-  centerCell: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  roleBadge: {
-    background: "#eef2ff",
-    color: "#3730a3",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    fontWeight: "600",
-    fontSize: "12px",
-    whiteSpace: "nowrap",
-  },
-
-  statusBadge: {
-    padding: "6px 10px",
-    borderRadius: "999px",
-    fontWeight: "600",
-    fontSize: "13px",
-  },
-
-  verified: {
-    background: "#dcfce7",
-    color: "#166534",
-  },
-
-  unverified: {
-    background: "#fef3c7",
-    color: "#92400e",
-  },
-
-  actions: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "7px",
-  },
-
-  actionButton: {
-    border: "none",
-    background: "#eff6ff",
-    color: "#2563eb",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-    minWidth: "82px",
-  },
-
-  archiveButton: {
-    border: "none",
-    background: "#f3f4f6",
-    color: "#374151",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-    minWidth: "82px",
-  },
-
-  restoreButton: {
-    border: "none",
-    background: "#dcfce7",
-    color: "#166534",
-    padding: "7px 12px",
-    borderRadius: "999px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-    minWidth: "74px",
-  },
-
-  deleteButton: {
-    border: "none",
-    background: "#fee2e2",
-    color: "#dc2626",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-    minWidth: "82px",
-  },
-
-  fileActions: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "7px",
-    alignItems: "center",
-  },
-
-  fileName: {
-    fontSize: "12px",
-    color: "#4b5563",
-    fontWeight: "600",
-    maxWidth: "115px",
-    wordBreak: "break-word",
-    textAlign: "center",
-    lineHeight: "1.25",
-  },
-
-  fileButtons: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "6px",
-    justifyContent: "center",
-  },
-
-  viewFileButton: {
-    textDecoration: "none",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    padding: "6px 9px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "700",
-  },
-
-  downloadFileButton: {
-    textDecoration: "none",
-    background: "#dcfce7",
-    color: "#166534",
-    padding: "6px 9px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "700",
-  },
-
-  noFileText: {
-    color: "#9ca3af",
-    fontSize: "13px",
-    fontWeight: "600",
-  },
-
-  profileGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(245px, 1fr))",
-    gap: "18px",
-  },
-
-  profileCard: {
-    background: "#ffffff",
-    border: "1px solid #dbe3ef",
-    borderRadius: "18px",
-    padding: "24px",
-    textAlign: "center",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.055)",
-  },
-
-  profileAvatar: {
-    width: "56px",
-    height: "56px",
-    borderRadius: "16px",
-    background: "linear-gradient(135deg, #4d6ebd, #092069)",
-    color: "white",
-    margin: "0 auto 14px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "800",
-    fontSize: "22px",
-  },
-
-  profileName: {
-    margin: "0 0 6px",
-    color: "#111827",
-    fontSize: "18px",
-    fontWeight: "800",
-  },
-
-  profileEmail: {
-    margin: "0 0 14px",
-    color: "#6b7280",
-    fontSize: "13px",
-    wordBreak: "break-word",
-  },
-
-  profileStats: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    marginBottom: "18px",
-  },
-
-  profileStat: {
-    background: "#f8fafc",
-    color: "#334155",
-    border: "1px solid #e2e8f0",
-    borderRadius: "12px",
-    padding: "9px 12px",
-    fontSize: "13px",
-    fontWeight: "700",
-  },
-
-  viewProfileButton: {
-    border: "none",
-    background: "#3a62d2",
-    color: "white",
-    padding: "10px 14px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "700",
-  },
-
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(17, 24, 39, 0.55)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-    padding: "20px",
-  },
-
-  modal: {
-    width: "100%",
-    maxWidth: "430px",
-    background: "white",
-    borderRadius: "18px",
-    padding: "28px",
-    boxShadow: "0 25px 50px rgba(15, 23, 42, 0.25)",
-    textAlign: "center",
-  },
-
-  profileModal: {
-    width: "100%",
-    maxWidth: "900px",
-    height: "88vh",
-    background: "#ffffff",
-    borderRadius: "8px",
-    padding: "0",
-    boxShadow: "0 28px 70px rgba(15, 23, 42, 0.28)",
-    border: "1px solid #e2e8f0",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-  },
-
-  profileModalScroll: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "28px",
-    scrollbarWidth: "thin",
-    scrollbarColor: "#cbd5e1 transparent",
-  },
-
-  profileModalFooter: {
-    borderTop: "1px solid #e2e8f0",
-    background: "#ffffff",
-    padding: "14px 28px",
-    display: "flex",
-    justifyContent: "center",
-  },
-
-  profileModalTop: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: "20px",
-  },
-
-  profileModalTitle: {
-    margin: 0,
-    color: "#0f172a",
-    fontSize: "28px",
-    fontWeight: "900",
-    letterSpacing: "-0.8px",
-  },
-
-  profileModalHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    background: "linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%)",
-    border: "1px solid #dbeafe",
-    borderRadius: "6px",
-    padding: "18px",
-    marginBottom: "18px",
-  },
-
-  profileModalSubtitle: {
-    margin: "6px 0 0",
-    color: "#64748b",
-    fontSize: "14px",
-    fontWeight: "500",
-  },
-
-
-  profileAvatarLarge: {
-    width: "64px",
-    height: "64px",
-    borderRadius: "50%",
-    background: "#1d4ed8",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "800",
-    fontSize: "26px",
-  },
-
-  profileModalName: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "20px",
-    fontWeight: "800",
-  },
-
-  profileModalEmail: {
-    margin: "6px 0 0",
-    color: "#6b7280",
-    fontSize: "14px",
-  },
-
-  profileDetailsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "16px",
-    marginTop: "18px",
-  },
-
-  profileSection: {
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "6px",
-    padding: "16px 18px",
-    textAlign: "left",
-    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.035)",
-    minHeight: "120px",
-  },
-
-  profileSectionTitle: {
-    margin: "0 0 12px",
-    color: "#0f172a",
-    fontSize: "15px",
-    fontWeight: "800",
-  },
-
-  chipRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
-  },
-
-  viewApplicationsButton: {
-    marginTop: "16px",
-    border: "none",
-    background: "#2563eb",
-    color: "white",
-    padding: "10px 16px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "800",
-    fontSize: "14px",
-  },
-
-  profileApplicationsBlock: {
-    marginTop: "18px",
-    border: "1px solid #e2e8f0",
-    borderRadius: "6px",
-    padding: "16px",
-    background: "#ffffff",
-  },
-
-  profileChip: {
-    display: "inline-block",
-    background: "#eef2ff",
-    color: "#3730a3",
-    padding: "7px 10px",
-    borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: "700",
-    margin: "0 8px 8px 0",
-  },
-
-  abilityChip: {
-    display: "inline-block",
-    background: "#dcfce7",
-    color: "#166534",
-    padding: "7px 10px",
-    borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: "700",
-    margin: "0 8px 8px 0",
-  },
-
-  profileEmptyText: {
-    color: "#6b7280",
-    fontSize: "14px",
-    margin: 0,
-  },
-
-  editModal: {
-    width: "100%",
-    maxWidth: "500px",
-    background: "white",
-    borderRadius: "18px",
-    padding: "28px",
-    boxShadow: "0 25px 50px rgba(15, 23, 42, 0.25)",
-    textAlign: "left",
-  },
-
-  modalIcon: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "50%",
-    background: "#fee2e2",
-    color: "#dc2626",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 14px",
-    fontSize: "22px",
-    fontWeight: "800",
-  },
-
-  modalTitle: {
-    margin: 0,
-    fontSize: "22px",
-    color: "#111827",
-    textAlign: "center",
-  },
-
-  modalText: {
-    color: "#4b5563",
-    fontSize: "15px",
-    lineHeight: "1.6",
-    margin: "14px 0 6px",
-    textAlign: "center",
-  },
-
-  modalWarning: {
-    color: "#991b1b",
-    fontSize: "14px",
-    fontWeight: "600",
-    margin: "0 0 22px",
-    textAlign: "center",
-  },
-
-  archiveModalWarning: {
-    color: "#92400e",
-    fontSize: "14px",
-    fontWeight: "600",
-    margin: "0 0 22px",
-    textAlign: "center",
-  },
-
-  editForm: {
-    marginTop: "20px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
-
-  editField: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  },
-
-  editLabel: {
-    fontSize: "14px",
-    color: "#374151",
-    fontWeight: "700",
-  },
-
-  editInput: {
-    padding: "11px 13px",
-    borderRadius: "11px",
-    border: "1px solid #d1d5db",
-    fontSize: "14px",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-
-  emailEditNote: {
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    padding: "10px 12px",
-    borderRadius: "12px",
-    fontSize: "13px",
-    fontWeight: "600",
-    lineHeight: "1.5",
-    margin: "-4px 0 4px",
-  },
-
-  passwordSection: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    marginTop: "2px",
-  },
-
-  changePasswordButton: {
-    border: "1px solid #1d4ed8",
-    background: "white",
-    color: "#1d4ed8",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "14px",
-    alignSelf: "flex-start",
-  },
-
-  modalActions: {
-    display: "flex",
-    justifyContent: "center",
-    gap: "12px",
-    marginTop: "22px",
-  },
-
-  cancelModalButton: {
-    border: "1px solid #d1d5db",
-    background: "white",
-    color: "#374151",
-    padding: "10px 16px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-
-  confirmDeleteButton: {
-    border: "1px solid #dc2626",
-    background: "#dc2626",
-    color: "white",
-    padding: "10px 16px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-
-  confirmArchiveButton: {
-    border: "1px solid #92400e",
-    background: "#92400e",
-    color: "white",
-    padding: "10px 16px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-
-  confirmEditButton: {
-    border: "1px solid #1d4ed8",
-    background: "#1d4ed8",
-    color: "white",
-    padding: "10px 16px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-
-  infoText: {
-    color: "#6b7280",
-    textAlign: "center",
-  },
-
-  errorText: {
-    color: "#dc2626",
-    fontWeight: "600",
-    textAlign: "center",
-  },
+const S = {
+  td: { padding: "14px 14px", borderBottom: "1px solid #f1f5f9", fontSize: "13px", verticalAlign: "middle", textAlign: "center", color: "#374151" },
+  badge: { padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: "500", whiteSpace: "nowrap", display: "inline-block" },
+  empty: { color: "#94a3b8", textAlign: "center", padding: "32px", fontSize: "13px", fontWeight: "400" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px", backdropFilter: "blur(3px)" },
+  btnBlue: { border: "none", background: "#eff6ff", color: "#2563eb", padding: "6px 12px", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "500", fontFamily: "Inter, sans-serif", transition: "filter 0.15s" },
+  btnGray: { border: "none", background: "#f1f5f9", color: "#475569", padding: "6px 12px", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "500", fontFamily: "Inter, sans-serif", transition: "filter 0.15s" },
+  btnRed: { border: "none", background: "#fef2f2", color: "#dc2626", padding: "6px 12px", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "500", fontFamily: "Inter, sans-serif", transition: "filter 0.15s" },
+  btnGreen: { border: "none", background: "#f0fdf4", color: "#16a34a", padding: "6px 12px", borderRadius: "7px", cursor: "pointer", fontSize: "12px", fontWeight: "500", fontFamily: "Inter, sans-serif", transition: "filter 0.15s" },
 };
 
 export default AdminDashboard;
