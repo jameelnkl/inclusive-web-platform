@@ -85,6 +85,7 @@ function AdminDashboard() {
   const [archivingUser, setArchivingUser] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
+  const [appStatusFilter, setAppStatusFilter] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const isArchivedView = activeTab === "ARCHIVED_USERS";
@@ -233,46 +234,86 @@ function AdminDashboard() {
   function renderApplicationFileButtons(application, type) {
     const hasFile = type === "application" ? application.hasApplicationDocument : application.hasRecommendationLetter;
     const label = type === "application" ? application.applicationOriginalName || "Application" : application.recommendationOriginalName || "Recommendation";
-    if (!hasFile) return <span style={{ color: "#94a3b8", fontSize: "12px" }}>No file</span>;
+    if (!hasFile) return <span style={{ color: "#cbd5e1", fontSize: "12px" }}>—</span>;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
-        <span style={{ fontSize: "11px", color: "#475569", maxWidth: "110px", wordBreak: "break-word", textAlign: "center" }}>{label}</span>
+        <span style={{ fontSize: "11px", color: "#64748b", maxWidth: "100px", wordBreak: "break-word", textAlign: "center", lineHeight: "1.3" }}>{label}</span>
         <div style={{ display: "flex", gap: "4px" }}>
-          <a href={getAdminApplicationFileUrl(application.id, type, false)} target="_blank" rel="noreferrer" style={{ textDecoration: "none", background: "#eff6ff", color: "#1d4ed8", padding: "4px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "500" }}>View</a>
-          <a href={getAdminApplicationFileUrl(application.id, type, true)} target="_blank" rel="noreferrer" style={{ textDecoration: "none", background: "#f0fdf4", color: "#16a34a", padding: "4px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "500" }}>Download</a>
+          <a href={getAdminApplicationFileUrl(application.id, type, false)} target="_blank" rel="noreferrer" style={{ textDecoration: "none", background: "#eff6ff", color: "#1d4ed8", padding: "3px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "500" }}>View</a>
+          <a href={getAdminApplicationFileUrl(application.id, type, true)} target="_blank" rel="noreferrer" style={{ textDecoration: "none", background: "#f0fdf4", color: "#16a34a", padding: "3px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "500" }}>Download</a>
         </div>
       </div>
     );
   }
 
+  function getAppStatusStyle(status) {
+    if (!status) return { background: "#fff7ed", color: "#c2410c" };
+    const s = status.toLowerCase();
+    if (s === "accepted") return { background: "#f0fdf4", color: "#16a34a" };
+    if (s === "rejected") return { background: "#fef2f2", color: "#dc2626" };
+    if (s === "in_review" || s === "in review") return { background: "#eff6ff", color: "#2563eb" };
+    return { background: "#fff7ed", color: "#c2410c" };
+  }
+
   function renderApplicationsTable(applications) {
+    const filtered = appStatusFilter ? applications.filter((a) => (a.status || "pending").toLowerCase() === appStatusFilter.toLowerCase()) : applications;
     return (
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-          <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              {["#", "Candidate", "Job", "Status", "Application", "Recommendation", "Applied"].map((h) => (
-                <th key={h} style={{ padding: "12px 10px", fontSize: "11px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid #e8edf5", textAlign: "center" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {applications.map((app, i) => (
-              <tr key={app.id || i} className="row-hover" style={{ transition: "background 0.15s" }}>
-                <td style={S.td}>{i + 1}</td>
-                <td style={S.td}>{app.candidateName || "—"}</td>
-                <td style={S.td}>{app.jobTitle || "—"}</td>
-                <td style={S.td}>
-                  <span style={{ ...S.badge, background: "#eef2ff", color: "#4338ca" }}>{formatStatus(app.status)}</span>
-                </td>
-                <td style={S.td}>{renderApplicationFileButtons(app, "application")}</td>
-                <td style={S.td}>{renderApplicationFileButtons(app, "recommendation")}</td>
-                <td style={S.td}>{formatDate(app.createdAt)}</td>
+      <div>
+        <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}>
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Search by candidate, job or status..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ width: "100%", padding: "9px 12px 9px 34px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", background: "#f8fafc", fontFamily: "Inter, sans-serif", color: "#0f172a", boxSizing: "border-box" }} />
+          </div>
+          <select value={appStatusFilter} onChange={(e) => setAppStatusFilter(e.target.value)}
+            style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", background: "#f8fafc", color: "#475569", cursor: "pointer", outline: "none", fontFamily: "Inter, sans-serif" }}>
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="in_review">In Review</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <span style={{ fontSize: "12px", color: "#94a3b8", whiteSpace: "nowrap" }}>{filtered.length} application{filtered.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["#", "Candidate", "Job", "Status", "Application", "Recommendation", "Applied"].map((h) => (
+                  <th key={h} style={{ padding: "11px 12px", fontSize: "11px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid #e8edf5", textAlign: "center" }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {applications.length === 0 && <p style={S.empty}>No applications found.</p>}
+            </thead>
+            <tbody>
+              {filtered.map((app, i) => (
+                <tr key={app.id || i} className="row-hover" style={{ transition: "background 0.15s" }}>
+                  <td style={{ ...S.td, color: "#94a3b8", width: "36px" }}>{i + 1}</td>
+                  <td style={{ ...S.td, fontWeight: "500", color: "#0f172a" }}>{app.candidateName || "—"}</td>
+                  <td style={{ ...S.td, color: "#475569" }}>{app.jobTitle || "—"}</td>
+                  <td style={S.td}>
+                    <span style={{ ...S.badge, ...getAppStatusStyle(app.status) }}>{formatStatus(app.status)}</span>
+                  </td>
+                  <td style={S.td}>{renderApplicationFileButtons(app, "application")}</td>
+                  <td style={S.td}>{renderApplicationFileButtons(app, "recommendation")}</td>
+                  <td style={{ ...S.td, color: "#64748b", fontSize: "12px" }}>{formatDate(app.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div style={{ textAlign: "center", padding: "48px 20px" }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 12px", display: "block" }}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <p style={{ color: "#94a3b8", fontSize: "13px", margin: 0, fontWeight: "400" }}>No applications found</p>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -379,7 +420,7 @@ function AdminDashboard() {
         {/* HEADER */}
         <div style={{ marginBottom: "28px" }}>
           <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-            Management
+            {navItems.find((n) => n.tab === activeTab)?.label}
           </p>
           <h1 style={{ margin: 0, fontSize: "26px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.4px" }}>
             {isArchivedView ? "Archived Users" : isUserProfilesView ? "User Profiles" : isApplicationsView ? "Applications" : "Users"}
@@ -390,12 +431,12 @@ function AdminDashboard() {
         {!isApplicationsView && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
             {statsCards.map((card) => (
-              <div key={card.label} className="card-stat" style={{ background: "#ffffff", borderRadius: "16px", padding: "20px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)", transition: "all 0.2s ease", cursor: "default" }}>
-                <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px", margin: "0 auto 14px" }}>
+              <div key={card.label} className="card-stat" style={{ background: "#ffffff", borderRadius: "16px", padding: "20px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)", transition: "all 0.2s ease", cursor: "default", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
                   {card.icon}
                 </div>
-                <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8", textAlign: "center" }}>{card.label}</p>
-                <p style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.5px", textAlign: "center" }}>{card.value}</p>
+                <p style={{ margin: "0 0 4px", fontSize: "12px", fontWeight: "400", color: "#94a3b8" }}>{card.label}</p>
+                <p style={{ margin: 0, fontSize: "28px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.5px" }}>{card.value}</p>
               </div>
             ))}
           </div>
@@ -442,19 +483,12 @@ function AdminDashboard() {
           )}
 
           {isApplicationsView && (
-            <div style={{ position: "relative", marginBottom: "20px" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}>
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input type="text" placeholder="Search applications..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: "100%", padding: "9px 12px 9px 34px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", background: "#f8fafc", fontFamily: "Inter, sans-serif", color: "#0f172a" }} />
+            <div>
+              {loading && <p style={S.empty}>Loading...</p>}
+              {error && <p style={{ color: "#dc2626", fontSize: "13px", textAlign: "center" }}>{error}</p>}
+              {!loading && !error && renderApplicationsTable(filteredApplications)}
             </div>
           )}
-
-          {loading && <p style={S.empty}>Loading...</p>}
-          {error && <p style={{ color: "#dc2626", fontSize: "13px", textAlign: "center" }}>{error}</p>}
-
-          {/* USERS TABLE */}
           {!loading && !error && !isUserProfilesView && !isApplicationsView && (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -502,9 +536,6 @@ function AdminDashboard() {
               {filteredUsers.length === 0 && <p style={S.empty}>No users match your search.</p>}
             </div>
           )}
-
-          {/* APPLICATIONS */}
-          {!loading && !error && isApplicationsView && renderApplicationsTable(filteredApplications)}
 
           {/* USER PROFILES */}
           {!loading && !error && isUserProfilesView && (
