@@ -20,6 +20,34 @@ function EyeIcon({ hidden }) {
   );
 }
 
+function UserIcon() {
+  return (
+    <svg className="input-icon" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M5 21C5.8 16.8 8.6 14.5 12 14.5C15.4 14.5 18.2 16.8 19 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function EmailIcon() {
+  return (
+    <svg className="input-icon" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3 8l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg className="input-icon" viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="11" width="14" height="10" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="16" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
 function SignUpPage() {
   const navigate = useNavigate();
 
@@ -60,14 +88,14 @@ function SignUpPage() {
 
   const passwordStrength =
     passwordScore === 0
-      ? { label: "", className: "", width: "0%" }
+      ? { label: "", color: "", width: "0%" }
       : passwordScore === 1
-      ? { label: "Weak", className: "weak", width: "25%" }
+      ? { label: "Weak", color: "#ef4444", width: "25%" }
       : passwordScore === 2
-      ? { label: "Fair", className: "fair", width: "50%" }
+      ? { label: "Fair", color: "#f59e0b", width: "50%" }
       : passwordScore === 3
-      ? { label: "Good", className: "good", width: "75%" }
-      : { label: "Strong", className: "strong", width: "100%" };
+      ? { label: "Good", color: "#3b82f6", width: "75%" }
+      : { label: "Strong", color: "#10b981", width: "100%" };
 
   const errors = {
     username:
@@ -90,11 +118,9 @@ function SignUpPage() {
 
   function validateForm() {
     setTouched({ username: true, email: true, password: true });
-
     if (!formData.username.trim()) return false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return false;
     if (passwordScore < 4) return false;
-
     return true;
   }
 
@@ -102,20 +128,13 @@ function SignUpPage() {
     e.preventDefault();
     setServerError("");
     setSuccess("");
-
     if (!validateForm()) return;
 
     try {
       setLoading(true);
       await registerUser(formData);
-
-      setSuccess(
-        "Account created successfully. Please check your email to verify your account before signing in."
-      );
-
-      setTimeout(() => {
-        navigate("/signin");
-      }, 2000);
+      setSuccess("Account created successfully. Please check your email to verify your account before signing in.");
+      setTimeout(() => navigate("/signin"), 2000);
     } catch (err) {
       setServerError(err.message || "We could not create your account. Please try again.");
     } finally {
@@ -126,83 +145,90 @@ function SignUpPage() {
   return (
     <div className="auth-page signup-page">
       <div className="signup-card">
+
+        {/* Card header shimmer stripe */}
+        <div className="signup-card-stripe"></div>
+
         <div className="signup-header">
-          <span className="auth-badge signup-badge">Join Hospitality</span>
-
-          <h1 className="signup-title">Sign Up</h1>
-
-          <div className="signup-header-spacer"></div>
+          <span className="auth-badge signup-badge">JoIn Hospitality</span>
+          <h1 className="signup-title">
+            Create your <span>account</span>
+          </h1>
+          <p className="signup-subtitle">
+            Start your journey in a more inclusive hospitality experience.
+          </p>
         </div>
 
-        <p className="signup-subtitle">
-          Start your journey in a more inclusive hospitality experience.
-        </p>
+        {/* Account type selector */}
+        <div className="account-type-options">
+          <button
+            type="button"
+            className={formData.accountType === "candidate" ? "account-type-card selected" : "account-type-card"}
+            onClick={() => handleAccountTypeChange("candidate")}
+          >
+            <span className="account-type-icon">👤</span>
+            <strong>Candidate</strong>
+            <small>Looking for opportunities</small>
+            {formData.accountType === "candidate" && <span className="account-type-check">✓</span>}
+          </button>
+
+          <button
+            type="button"
+            className={formData.accountType === "employer" ? "account-type-card selected" : "account-type-card"}
+            onClick={() => handleAccountTypeChange("employer")}
+          >
+            <span className="account-type-icon">🏢</span>
+            <strong>Employer</strong>
+            <small>Hiring for my business</small>
+            {formData.accountType === "employer" && <span className="account-type-check">✓</span>}
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="auth-form signup-form" noValidate>
-          <div className="auth-field">
-            <div className="account-type-options">
-              <button
-                type="button"
-                className={
-                  formData.accountType === "candidate"
-                    ? "account-type-card selected"
-                    : "account-type-card"
-                }
-                onClick={() => handleAccountTypeChange("candidate")}
-              >
-                <strong>Candidate</strong>
-                <small>Looking for opportunities</small>
-              </button>
 
-              <button
-                type="button"
-                className={
-                  formData.accountType === "employer"
-                    ? "account-type-card selected"
-                    : "account-type-card"
-                }
-                onClick={() => handleAccountTypeChange("employer")}
-              >
-                <strong>Employer</strong>
-                <small>Hiring for my business</small>
-              </button>
-            </div>
-          </div>
-
+          {/* Username */}
           <div className="auth-field">
             <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              type="text"
-              name="username"
-              placeholder="Choose a username"
-              value={formData.username}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className={errors.username ? "auth-input input-error" : "auth-input"}
-            />
+            <div className="input-icon-wrapper">
+              <UserIcon />
+              <input
+                id="username"
+                type="text"
+                name="username"
+                placeholder="Choose a username"
+                value={formData.username}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={errors.username ? "auth-input auth-input--icon input-error" : "auth-input auth-input--icon"}
+              />
+            </div>
             {errors.username && <p className="field-error">{errors.username}</p>}
           </div>
 
+          {/* Email */}
           <div className="auth-field">
             <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              placeholder="name@example.com"
-              value={formData.email}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className={errors.email ? "auth-input input-error" : "auth-input"}
-            />
+            <div className="input-icon-wrapper">
+              <EmailIcon />
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="name@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={errors.email ? "auth-input auth-input--icon input-error" : "auth-input auth-input--icon"}
+              />
+            </div>
             {errors.email && <p className="field-error">{errors.email}</p>}
           </div>
 
+          {/* Password */}
           <div className="auth-field">
             <label htmlFor="password">Password</label>
-
-            <div className="password-input-wrapper">
+            <div className="input-icon-wrapper">
+              <LockIcon />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -211,13 +237,8 @@ function SignUpPage() {
                 value={formData.password}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={
-                  errors.password
-                    ? "auth-input password-input input-error"
-                    : "auth-input password-input"
-                }
+                className={errors.password ? "auth-input auth-input--icon password-input input-error" : "auth-input auth-input--icon password-input"}
               />
-
               <button
                 type="button"
                 className="password-toggle"
@@ -227,40 +248,61 @@ function SignUpPage() {
                 <EyeIcon hidden={showPassword} />
               </button>
             </div>
-
             {errors.password && <p className="field-error">{errors.password}</p>}
 
-            <div className="password-hints compact">
-              <p className="password-hints-title">Password must contain:</p>
+            {/* Password strength bar */}
+            {formData.password.length > 0 && (
+              <div className="strength-row">
+                <div className="strength-track">
+                  <div
+                    className="strength-fill"
+                    style={{
+                      width: passwordStrength.width,
+                      background: passwordStrength.color,
+                    }}
+                  />
+                </div>
+                <span className="strength-label" style={{ color: passwordStrength.color }}>
+                  {passwordStrength.label}
+                </span>
+              </div>
+            )}
 
-              <ul className="password-rules">
-                <li className={passwordChecks.length ? "rule valid" : "rule"}>
-                  8+ characters
-                </li>
-                <li className={passwordChecks.lowercase ? "rule valid" : "rule"}>
-                  Lowercase letter
-                </li>
-                <li className={passwordChecks.uppercase ? "rule valid" : "rule"}>
-                  Uppercase letter
-                </li>
-                <li className={passwordChecks.symbol ? "rule valid" : "rule"}>
-                  Symbol
-                </li>
-              </ul>
+            {/* Password rules compact */}
+            <div className="password-hints-compact">
+              {[
+                { key: "length", label: "8+ chars" },
+                { key: "lowercase", label: "a–z" },
+                { key: "uppercase", label: "A–Z" },
+                { key: "symbol", label: "#@!" },
+              ].map(({ key, label }) => (
+                <span
+                  key={key}
+                  className={passwordChecks[key] ? "hint-pill hint-pill--valid" : "hint-pill"}
+                >
+                  {passwordChecks[key] ? "✓" : "○"} {label}
+                </span>
+              ))}
             </div>
           </div>
 
           {serverError && <p className="auth-error">{serverError}</p>}
           {success && <p className="auth-success">{success}</p>}
 
-          <button type="submit" className="primary-btn full-width" disabled={loading}>
-            {loading ? "Creating account..." : "Create Account"}
+          <button type="submit" className="primary-btn primary-btn--full" disabled={loading}>
+            {loading ? "Creating account..." : (
+              <>
+                <span>Create Account</span>
+                <span className="btn-arrow">→</span>
+              </>
+            )}
           </button>
         </form>
 
-        <p className="auth-footer">
-          Already have an account? <Link to="/signin">Sign in</Link>
-        </p>
+        <Link to="/signin" className="ghost-btn">
+          Already have an account? <span>Sign in</span>
+        </Link>
+
       </div>
     </div>
   );
