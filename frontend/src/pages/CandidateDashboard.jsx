@@ -546,7 +546,7 @@ function CandidateDashboard() {
               {/* LEFT CARD */}
               <div style={styles.card}>
                 <div style={styles.cardHeader}>
-                  <div>
+                  <div style={{ flex: 1, textAlign: "center" }}>
                     <h2 style={styles.sectionTitle}>Select Your Disabilities</h2>
                     <p style={styles.text}>Choose all that apply to get accurate recommendations.</p>
                   </div>
@@ -617,7 +617,7 @@ function CandidateDashboard() {
                   </div>
                 </div>
 
-                <p style={styles.aiDescription}>
+                <p style={{ ...styles.aiDescription, textAlign: "center", width: "100%" }}>
                   Select your disabilities on the left, then click below to get your personalized compatibility scores.
                 </p>
 
@@ -906,8 +906,8 @@ const styles = {
   profileGrid: { display: "grid", gridTemplateColumns: "1.3fr 0.7fr", gap: "18px" },
   card: { background: "#ffffff", borderRadius: "18px", padding: "24px", boxShadow: "0 1px 10px rgba(15,23,42,0.05)", border: "1px solid #e8edf5" },
   cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" },
-  sectionTitle: { margin: "0 0 4px", fontSize: "17px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.2px" },
-  text: { color: "#64748b", fontSize: "13px", lineHeight: "1.5", margin: 0 },
+  sectionTitle: { margin: "0 0 4px", fontSize: "17px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.2px", textAlign: "center" },
+  text: { color: "#64748b", fontSize: "13px", lineHeight: "1.5", margin: 0, textAlign: "center" },
   selectedPill: { background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: "999px", padding: "4px 11px", fontSize: "12px", fontWeight: "500", whiteSpace: "nowrap" },
   searchWrapper: { position: "relative", marginBottom: "12px" },
   searchInput: { width: "100%", padding: "10px 12px 10px 34px", borderRadius: "9px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", boxSizing: "border-box", background: "#f8fafc", color: "#0f172a", fontFamily: "Inter, sans-serif" },
@@ -928,11 +928,11 @@ const styles = {
   errorText: { color: "#dc2626", fontWeight: "500", fontSize: "13px", marginTop: "6px" },
   infoText: { color: "#94a3b8", fontSize: "13px" },
   aiCard: { background: "#ffffff", borderRadius: "18px", padding: "22px", boxShadow: "0 1px 10px rgba(15,23,42,0.05)", border: "1px solid #e8edf5" },
-  aiCardHeader: { display: "flex", alignItems: "center", gap: "11px", marginBottom: "12px" },
+  aiCardHeader: { display: "flex", alignItems: "center", gap: "11px", marginBottom: "12px", justifyContent: "center" },
   aiIconWrapper: { width: "36px", height: "36px", borderRadius: "10px", background: "linear-gradient(135deg, #1d4ed8, #3b82f6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   aiTitle: { margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" },
   aiSubtitle: { margin: "1px 0 0", fontSize: "11px", color: "#94a3b8", fontWeight: "400" },
-  aiDescription: { color: "#64748b", fontSize: "13px", lineHeight: "1.55", marginBottom: "14px" },
+  aiDescription: { color: "#64748b", fontSize: "13px", lineHeight: "1.55", marginBottom: "14px", textAlign: "center" },
   aiButton: { width: "100%", border: "none", background: "linear-gradient(135deg, #1d4ed8, #2563eb)", color: "#ffffff", padding: "11px", borderRadius: "10px", fontWeight: "500", fontSize: "13px", fontFamily: "Inter, sans-serif", letterSpacing: "0.1px", transition: "all 0.15s" },
   aiErrorBox: { marginTop: "10px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 12px", color: "#dc2626", fontSize: "12px", fontWeight: "400" },
   aiEmptyState: { textAlign: "center", padding: "28px 16px" },
