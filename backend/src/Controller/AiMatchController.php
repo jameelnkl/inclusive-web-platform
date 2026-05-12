@@ -15,7 +15,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class AiMatchController extends AbstractController
 {
     // URL of the Flask AI service running locally (or on your server)
-    private const AI_SERVICE_URL = 'http://localhost:5001/predict';
+    private const AI_SERVICE_URL = 'https://fyp-ai-service-tiyi.onrender.com/predict';
 
     private function getUserFromToken(
         Request $request,
