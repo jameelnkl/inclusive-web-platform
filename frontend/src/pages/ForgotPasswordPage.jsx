@@ -4,6 +4,15 @@ import logoImage from "../assets/john-logo.png";
 import { requestPasswordReset } from "../services/authService";
 import "../styles/authPages.css";
 
+function EmailIcon() {
+  return (
+    <svg className="input-icon" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3 8l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sentEmail, setSentEmail] = useState("");
@@ -23,7 +32,6 @@ function ForgotPasswordPage() {
 
     try {
       setLoading(true);
-
       const data = await requestPasswordReset(email);
       setSentEmail(email);
       setMessage(data.message || "We sent a reset link to your email.");
@@ -37,48 +45,68 @@ function ForgotPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-shell">
+
+        {/* LEFT */}
         <div className="auth-left">
-          <span className="auth-badge">🔐 Password Reset</span>
-          <h1 className="auth-title">Forgot Password?</h1>
-          <p className="auth-subtitle">
-            No worries! Enter your email address and we&apos;ll send you a secure
-            link to reset your password.
-          </p>
+
+          <div className="signin-header">
+            <span className="auth-badge">JoIn Hospitality</span>
+            <h1 className="signin-title">
+              Forgot your <span>password?</span>
+            </h1>
+            <p className="auth-subtitle">
+              No worries — enter your email and we'll send you a secure link to reset it.
+            </p>
+          </div>
 
           {!message ? (
-            <form onSubmit={handleSubmit} className="auth-form">
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <div className="auth-field">
                 <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="auth-input"
-                />
+                <div className="input-icon-wrapper">
+                  <EmailIcon />
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="auth-input auth-input--icon"
+                  />
+                </div>
               </div>
 
               {error && <p className="auth-error">{error}</p>}
 
-              <button type="submit" className="primary-btn full-width" disabled={loading}>
-                {loading ? "Sending..." : "Send Reset Link"}
+              <button type="submit" className="primary-btn primary-btn--full" disabled={loading}>
+                {loading ? (
+                  <span className="btn-spinner-wrap">
+                    <span className="btn-spinner"></span>
+                    <span>Sending</span>
+                  </span>
+                ) : (
+                  <>
+                    <span>Send Reset Link</span>
+                    <span className="btn-arrow">→</span>
+                  </>
+                )}
               </button>
             </form>
           ) : (
             <div className="reset-success-card">
-              <div className="reset-success-icon">📬</div>
-
-              <h3>Check your inbox!</h3>
-
+              <div className="reset-success-icon">
+                <svg viewBox="0 0 24 24" fill="none" width="26" height="26">
+                  <rect x="3" y="5" width="18" height="14" rx="3" stroke="#1a4fa0" strokeWidth="1.8" />
+                  <path d="M3 8l9 6 9-6" stroke="#1a4fa0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3>Check your inbox</h3>
               <p>
-                We sent a reset link to <strong>{sentEmail}</strong>. It expires in
-                1 hour.
+                We sent a reset link to <strong>{sentEmail}</strong>. It expires in 1 hour.
               </p>
-
               <p className="reset-success-note">
-                Didn&apos;t receive it? Check your spam folder or{" "}
+                Didn't receive it? Check your spam folder or{" "}
                 <button
                   type="button"
                   onClick={() => {
@@ -92,17 +120,22 @@ function ForgotPasswordPage() {
             </div>
           )}
 
-          <p className="auth-footer">
-            Remembered your password? <Link to="/signin">Sign in</Link>
-          </p>
+          <Link to="/signin" className="ghost-btn">
+            Remembered your password? <span>Sign in</span>
+          </Link>
+
         </div>
 
+        {/* RIGHT */}
         <div className="auth-right">
           <div className="logo-panel">
+            <div className="logo-orb logo-orb-1"></div>
+            <div className="logo-orb logo-orb-2"></div>
             <div className="logo-glow"></div>
-            <img src={logoImage} alt="John Hospitality logo" className="logo-image" />
+            <img src={logoImage} alt="JoIn Hospitality logo" className="logo-image" />
           </div>
         </div>
+
       </div>
     </div>
   );

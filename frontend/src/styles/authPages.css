@@ -1412,3 +1412,90 @@
 .ghost-btn:hover span::after {
   width: 100%;
 }
+
+/* ── SIGN IN PAGE ── */
+
+.signin-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.signin-title {
+  margin: 0;
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 3.4vw, 2.85rem);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  color: #1a2540;
+}
+
+.signin-title span {
+  font-style: italic;
+  color: #1d55d4;
+}
+
+.signin-form {
+  max-width: 100%;
+}
+
+.signin-password-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.signin-password-label-row label {
+  color: #314364;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.forgot-link {
+  font-size: 13px;
+  color: #1a4fa0;
+  font-weight: 600;
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+
+.forgot-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0%;
+  height: 1.5px;
+  background: #2563eb;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.forgot-link:hover::after {
+  width: 100%;
+}
+
+.btn-spinner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -25,6 +25,25 @@ function EyeIcon({ hidden }) {
   );
 }
 
+function EmailIcon() {
+  return (
+    <svg className="input-icon" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3 8l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg className="input-icon" viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="11" width="14" height="10" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="16" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
 function SignInPage() {
   const navigate = useNavigate();
 
@@ -38,10 +57,7 @@ function SignInPage() {
   const [error, setError] = useState("");
 
   function handleChange(e) {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
   async function handleSubmit(e) {
@@ -55,25 +71,17 @@ function SignInPage() {
 
     try {
       setLoading(true);
-
       const data = await loginUser(formData);
       const token = data.token;
 
-      if (!token) {
-        throw new Error("No token returned from backend.");
-      }
+      if (!token) throw new Error("No token returned from backend.");
 
       saveToken(token);
-
       const role = getRoleFromToken(token);
 
-      if (role === "ROLE_ADMIN") {
-        navigate("/admin");
-      } else if (role === "ROLE_EMPLOYER") {
-        navigate("/employer");
-      } else {
-        navigate("/candidate");
-      }
+      if (role === "ROLE_ADMIN") navigate("/admin");
+      else if (role === "ROLE_EMPLOYER") navigate("/employer");
+      else navigate("/candidate");
     } catch (err) {
       setError(err.message || "Invalid credentials or email not verified.");
     } finally {
@@ -84,33 +92,49 @@ function SignInPage() {
   return (
     <div className="auth-page">
       <div className="auth-shell">
+
+        {/* LEFT */}
         <div className="auth-left">
-          <span className="auth-badge">Welcome Back</span>
 
-          <h1 className="auth-title">Sign In</h1>
+          <div className="signin-header">
+            <span className="auth-badge">JoIn Hospitality</span>
+            <h1 className="signin-title">
+              Welcome <span>back.</span>
+            </h1>
+            <p className="auth-subtitle">
+              Access your account and continue your journey with JoIn Hospitality.
+            </p>
+          </div>
 
-          <p className="auth-subtitle">
-            Access your account and continue your journey with John Hospitality.
-          </p>
+          <form onSubmit={handleSubmit} className="auth-form signin-form" noValidate>
 
-          <form onSubmit={handleSubmit} className="auth-form">
+            {/* Email */}
             <div className="auth-field">
               <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleChange}
-                className="auth-input"
-              />
+              <div className="input-icon-wrapper">
+                <EmailIcon />
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="auth-input auth-input--icon"
+                />
+              </div>
             </div>
 
+            {/* Password */}
             <div className="auth-field">
-              <label htmlFor="password">Password</label>
-
-              <div className="password-input-wrapper">
+              <div className="signin-password-label-row">
+                <label htmlFor="password">Password</label>
+                <Link to="/forgot-password" className="forgot-link">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="input-icon-wrapper">
+                <LockIcon />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -118,9 +142,8 @@ function SignInPage() {
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="auth-input password-input"
+                  className="auth-input auth-input--icon password-input"
                 />
-
                 <button
                   type="button"
                   className="password-toggle"
@@ -130,40 +153,41 @@ function SignInPage() {
                   <EyeIcon hidden={showPassword} />
                 </button>
               </div>
-
-              <div style={{ textAlign: "right", marginTop: "8px" }}>
-                <Link
-                  to="/forgot-password"
-                  style={{
-                    fontSize: "14px",
-                    color: "#1e3a8a",
-                    fontWeight: "600",
-                    textDecoration: "none",
-                  }}
-                >
-                  Forgot password?
-                </Link>
-              </div>
             </div>
 
             {error && <p className="auth-error">{error}</p>}
 
-            <button type="submit" className="primary-btn full-width" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <button type="submit" className="primary-btn primary-btn--full" disabled={loading}>
+              {loading ? (
+                <span className="btn-spinner-wrap">
+                  <span className="btn-spinner"></span>
+                  <span>Signing in</span>
+                </span>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <span className="btn-arrow">→</span>
+                </>
+              )}
             </button>
           </form>
 
-          <p className="auth-footer">
-            Don&apos;t have an account? <Link to="/signup">Create one</Link>
-          </p>
+          <Link to="/signup" className="ghost-btn">
+            Don't have an account? <span>Create one</span>
+          </Link>
+
         </div>
 
+        {/* RIGHT */}
         <div className="auth-right">
           <div className="logo-panel">
+            <div className="logo-orb logo-orb-1"></div>
+            <div className="logo-orb logo-orb-2"></div>
             <div className="logo-glow"></div>
-            <img src={logoImage} alt="John Hospitality logo" className="logo-image" />
+            <img src={logoImage} alt="JoIn Hospitality logo" className="logo-image" />
           </div>
         </div>
+
       </div>
     </div>
   );

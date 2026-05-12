@@ -290,7 +290,12 @@ function SignUpPage() {
           {success && <p className="auth-success">{success}</p>}
 
           <button type="submit" className="primary-btn primary-btn--full" disabled={loading}>
-            {loading ? "Creating account..." : (
+            {loading ? (
+              <span className="btn-spinner-wrap">
+                <span className="btn-spinner"></span>
+                <span>Creating account</span>
+              </span>
+            ) : (
               <>
                 <span>Create Account</span>
                 <span className="btn-arrow">→</span>
