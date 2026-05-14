@@ -10,13 +10,13 @@ import {
   updateEmployerProfile,
   getEmployerProfile,
   getToken,
+  logout,
 } from "../services/authService";
 
 const API_BASE_URL = "https://fyp-backend-cbaa.onrender.com/api";
 const BACKEND_BASE_URL = "https://fyp-backend-cbaa.onrender.com";
 
 const globalStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
   * { box-sizing: border-box; }
   body { margin: 0; }
   ::-webkit-scrollbar { width: 5px; }
@@ -211,6 +211,13 @@ function EmployerDashboard() {
     return { background: "#fff7ed", color: "#c2410c" };
   }
 
+  function handleLogout() {
+    logout();
+    window.location.href = "/signin";
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
   const navItems = [
     { tab: "POST_JOB", label: editingJobId ? "Edit Job" : "Post a Job", icon: <PostJobIcon /> },
     { tab: "MY_JOBS", label: "My Jobs", icon: <MyJobsIcon /> },
@@ -244,7 +251,7 @@ function EmployerDashboard() {
           })}
         </nav>
         <div style={{ marginTop: "auto", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <button onClick={() => { const { logout } = require("../services/authService"); logout(); window.location.href = "/signin"; }}
+          <button onClick={handleLogout}
             style={{ display: "flex", alignItems: "center", gap: "8px", background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: "13px", fontWeight: "400", padding: "8px 12px", borderRadius: "8px", fontFamily: "Inter, sans-serif", width: "100%" }}>
             <LogoutIcon />Log out
           </button>
@@ -290,7 +297,17 @@ function EmployerDashboard() {
                   <input className="input-field" style={inputStyle} name="location" value={formData.location} onChange={handleChange} required />
                 </Field>
                 <Field label="Application Deadline *">
-                  <input className="input-field" style={inputStyle} type="date" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} required />
+                  <input
+                    className="input-field"
+                    style={{ ...inputStyle, cursor: "pointer", colorScheme: "light" }}
+                    type="date"
+                    name="applicationDeadline"
+                    value={formData.applicationDeadline}
+                    onChange={handleChange}
+                    onClick={(e) => e.target.showPicker?.()}
+                    min={today}
+                    required
+                  />
                 </Field>
                 <Field label="Job Type *">
                   <select className="input-field" style={inputStyle} name="jobType" value={formData.jobType} onChange={handleChange}>
@@ -474,7 +491,6 @@ function EmployerDashboard() {
         {/* PROFILE */}
         {activeTab === "PROFILE" && (
           <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: "20px", alignItems: "start" }}>
-            {/* Logo */}
             <div style={{ background: "#ffffff", borderRadius: "20px", padding: "24px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)", display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
               <p style={{ margin: 0, fontSize: "12px", fontWeight: "500", color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px", alignSelf: "flex-start" }}>Company Logo</p>
               <div style={{ width: "160px", height: "160px", borderRadius: "16px", background: "#f8fafc", border: "1.5px dashed #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -491,7 +507,6 @@ function EmployerDashboard() {
               <p style={{ margin: 0, fontSize: "11px", color: "#94a3b8", textAlign: "center" }}>PNG, JPG, WebP or GIF. Max 3MB.</p>
             </div>
 
-            {/* Fields */}
             <div style={{ background: "#ffffff", borderRadius: "20px", padding: "24px", border: "1px solid #e8edf5", boxShadow: "0 1px 8px rgba(15,23,42,0.05)" }}>
               {loadingProfile && <p style={{ color: "#94a3b8", fontSize: "13px" }}>Loading...</p>}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0 20px" }}>
