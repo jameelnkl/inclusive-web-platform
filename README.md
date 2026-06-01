@@ -88,28 +88,45 @@ User Data + Job Requirements → AI Model → Compatibility Score → Frontend D
 ## Repository Structure
 
 ```
-fyp-frontend/
-├── src/
-│   ├── pages/          # Application pages
-│   ├── components/     # Reusable UI components
-│   ├── services/       # API communication logic
-│   └── context/        # Authentication and state management
-
-fyp-backend/
-├── src/
-│   ├── Entity/         # Database entities
-│   ├── Controller/     # API controllers
-│   ├── Repository/     # Database repositories
-│   ├── Security/       # JWT authentication and authorization
-│   └── Service/        # Business logic services
-├── config/             # Symfony configuration files
-└── migrations/         # Database migration files
-
-AI/
-├── dataset/            # Training datasets
-├── models/             # Saved trained models
-├── training/           # Training scripts
-└── notebooks/          # Research and experimentation notebooks
+├── ai_service/
+│   ├── app.py
+│   ├── model_compatibility...
+│   ├── model_constant...
+│   ├── model_remaining...
+│   └── requirements.txt
+│
+├── backend/
+│   ├── bin/
+│   ├── config/
+│   ├── migrations/
+│   ├── public/
+│   ├── src/
+│   ├── templates/
+│   ├── .editorconfig
+│   ├── .env
+│   ├── .env.dev
+│   ├── .gitignore
+│   ├── compose.override...
+│   ├── compose.yaml
+│   ├── composer.json
+│   ├── composer.lock
+│   ├── Dockerfile
+│   ├── Dockerfile.render
+│   └── symfony.lock
+│
+├── frontend/
+│   ├── node_modules/
+│   ├── public/
+│   ├── src/
+│   ├── .gitignore
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── README.md
+│   └── vite.config.js
+│
+└── database.sql
 ```
 
 ---
